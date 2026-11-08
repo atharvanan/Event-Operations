@@ -1,0 +1,10 @@
+node_modules
+dist
+.cache
+.git
+.env
+uploads/evidence/*
+uploads/chat/*
+!uploads/**/.gitkeep
+*.log
+npm-debug.log*
