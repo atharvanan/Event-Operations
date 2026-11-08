@@ -150,3 +150,4 @@ export function TimelineView({ eventId, onSelectTask }: TimelineViewProps) {
     </div>
   );
 }
+

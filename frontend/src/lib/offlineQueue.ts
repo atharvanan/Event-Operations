@@ -122,3 +122,4 @@ export async function syncPendingActions(apiInstance: any): Promise<{ synced: nu
 
   return { synced, failed };
 }
+

@@ -176,3 +176,4 @@ export function WorkloadMatrix({ eventId, onSelectTeam }: WorkloadMatrixProps) {
     </div>
   );
 }
+

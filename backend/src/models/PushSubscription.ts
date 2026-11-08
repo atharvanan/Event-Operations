@@ -32,3 +32,4 @@ export const PushSubscription = mongoose.model<IPushSubscriptionDoc>(
   'PushSubscription',
   pushSubscriptionSchema
 );
+

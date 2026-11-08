@@ -220,3 +220,4 @@ export function ActivityFeed({ eventId, onSelectTask }: ActivityFeedProps) {
     </div>
   );
 }
+
