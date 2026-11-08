@@ -1,0 +1,227 @@
+EVENT OPERATIONS& TEAM COORDINATION
+A Jira-inspired, multilingual, real-time web application and Progressive Web App
+Product objective
+Coordinate event setup teams, tasks, evidence, and live communication from one platform.
+Primary users
+Event managers, team leads, team members, vendors, and (optionally) clients.
+Languages
+English, Hindi, and Marathi, with a language switcher and localized interface.
+Deployment target
+Frontend: Vercel | Backend: Render | PWA: installable on supported devices
+COPY THE PROMPT BELOW INTO YOUR AI DEVELOPMENT TOOL
+MASTER DEVELOPMENT PROMPT
+Role and working approach
+You are a senior product architect, UX/UI designer, full-stack engineer, security engineer, and QA engineer. Design and build a production-minded event operations and team coordination platform inspired by Jira's project/task workflows and WhatsApp's ease of communication, but purpose-built for on-ground event execution. Do not make a generic to-do list or a visual Jira clone. Prioritize fast mobile use, clear accountability, live status visibility, evidence-based completion, and reliable communication when teams are spread across a venue.
+1. Product vision and core problem
+The platform is used by event planners and event management companies to coordinate the setup and execution of weddings, corporate events, concerts, conferences, birthday parties, festivals, and similar events. During setup, an event manager may supervise several teams working at different locations. Each team has a team lead and a variable number of members. The manager assigns outcomes and deadlines to team leads; team leads break those outcomes into smaller tasks and assign them to members.
+The manager must be able to see whether a setup is not started, in progress, blocked, awaiting verification, or completed—without walking to each work area or relying on repeated phone calls and scattered WhatsApp messages. Team leads and members must submit photo/video evidence against tasks. The manager must be able to inspect evidence, request corrections, approve completion, escalate urgent work, and communicate with a particular team, an individual, selected leads, or everyone.
+Primary product principle: one event workspace should provide a trustworthy, current operational picture of every team, task, deadline, conversation, and proof of work.
+2. User roles, hierarchy, and permissions
+Implement role-based access control (RBAC), scoped to an organization and its events. Support at least these roles:
+Organization Owner/Admin: manages the organization, users, roles, event access, settings, and subscription-independent workspace configuration.
+Event Manager: creates and manages assigned events, creates teams, appoints team leads, assigns team-level tasks, sets deadlines and priorities, views all event progress, chats across teams, and verifies submitted evidence.
+Team Lead: sees the teams and tasks assigned to them, creates and assigns microtasks to their own team members, updates progress, coordinates their team, submits team-level completion for manager review, and communicates with the manager.
+Team Member: sees assigned tasks and relevant team information, updates their own task status, adds comments, uploads evidence, records voice notes, and chats only in permitted conversations.
+Optional Vendor/Client role: keep the data model extensible for restricted external access later. Do not expose internal team chat or unrelated event information to external users.
+Enforce permissions on the backend for every API and real-time event; hiding a button in the frontend is not authorization. Users may belong to multiple teams or events if explicitly assigned. Team membership can change during an event, and team size must not be fixed.
+3. Core workflow: manager → team lead → team member
+An event manager creates an event and adds operational teams such as Catering, Stage Decoration, Chairs & Tables, Lights & Equipment, and Camera Crew.
+The manager assigns a team lead to each team and can add, remove, or replace members at any time.
+The manager creates a team-level task with title, detailed instructions, work location/zone, priority, start time, due time, dependencies, and required completion evidence.
+The assigned team lead receives an in-app and push notification, acknowledges the task, and breaks it into microtasks.
+The team lead assigns microtasks to individual members, with their own owners, deadlines, instructions, and evidence requirements.
+Members update progress and upload photos or short videos. The team lead can review, reject with a reason, or mark a microtask ready for team-lead verification.
+When all required microtasks are complete, the team lead submits the parent task for event-manager verification.
+The event manager reviews the status and evidence, then approves completion or requests rework with a clear reason and revised deadline.
+All actions create an immutable, timestamped activity/audit record. The task's current state and its full history must both be visible.
+4. Task lifecycle and operational controls
+Support configurable statuses, with sensible defaults:
+To Do → Acknowledged → In Progress → Blocked / On Hold → Submitted for Review → Rework Required → Completed.
+Allow a task to be marked Urgent or Critical independently of its status.
+Show due-time countdowns, overdue indicators, late-start warnings, and tasks at risk of missing their deadline.
+Support start time, due time, estimated duration, actual completion time, timezone, and optional grace period.
+Support task dependencies (for example, stage lighting installation cannot start until stage structure is ready).
+Support parent tasks, subtasks, checklists, recurring/template tasks, attachments, comments, labels, and custom fields.
+Allow managers to reassign tasks and change deadlines, while preserving the previous values in the audit history.
+Provide bulk assignment and bulk status operations for authorized users, with confirmation for consequential actions.
+Do not automatically mark a parent task complete merely because a member marks a microtask complete. Use the configured review chain and required evidence rules.
+5. Evidence-based task completion
+Evidence is a first-class part of the product, not an optional generic attachment.
+Allow users to capture or select photos and videos from mobile devices and attach them to a task or microtask.
+Support multiple evidence items per task, captions, uploader identity, upload time, and the task stage being documented.
+Show evidence in a clean gallery/lightbox with timestamps and uploader details.
+Allow the team lead or manager to approve evidence, reject it with a reason, or request additional evidence.
+Distinguish task completion from evidence approval. A task requiring proof cannot be finally completed until the required reviewer accepts it.
+Compress/rescale images client-side where practical, validate file type and size on the server, and show upload progress, retry, and failure states.
+Generate thumbnails where feasible. Avoid storing large binary files directly in the application database.
+Record evidence metadata and storage references; do not silently overwrite or delete previously submitted evidence.
+Video uploads can be expensive and unreliable on free infrastructure. Make allowed formats and size limits configurable. Provide a clear upload limit and graceful fallback to a compressed clip or photo set.
+6. Chat and real-time communication
+Build a familiar, mobile-first messaging experience that is easy to use under event-site conditions.
+Global event chat: event manager, all team leads, and all permitted team members can communicate in one event-wide channel.
+Manager-to-team chat: the manager can open a dedicated channel with one team, including its lead and members.
+Manager-to-lead direct chat: private one-to-one communication with any team lead.
+Team chat: team lead and that team's members can coordinate in a team-only channel.
+Individual direct messages: allow only when permitted by the organization's communication policy.
+Support text messages, photo attachments, task links, replies/threads or quoted replies, message timestamps, delivery/read indicators where feasible, and unread counts.
+Support voice notes using the browser MediaRecorder API, with record, pause, preview, cancel, send, and playback controls. Handle permission denial and unsupported browsers.
+Support message search, date separators, pagination/infinite history loading, and clear empty/loading/error states.
+Allow users to open a task directly from a chat message and to share a task into a conversation.
+Provide notification preferences and mute controls without muting critical task escalations.
+Enforce conversation membership on the server. A user must not be able to join a channel, read history, download media, or subscribe to socket events merely by guessing a conversation ID. Do not promise end-to-end encryption unless it is actually implemented and independently reviewed.
+7. Notifications and escalation
+Notify the assigned lead when a manager assigns or changes a task.
+Notify members when a lead assigns or changes a microtask.
+Notify the manager when a team acknowledges a task, reports a blocker, submits evidence, requests clarification, or submits work for review.
+Provide reminders before deadlines and alerts for overdue or critical tasks.
+Allow managers to escalate a task and mark it Urgent/Critical, with a reason and explicit acknowledgement by the receiving lead.
+Provide in-app notifications and Web Push notifications through a free provider/service where available.
+Use notification deduplication, user preferences, and rate limiting so users are not flooded.
+Do not depend on paid SMS, WhatsApp Business API, paid email APIs, or paid third-party notification services.
+8. Event dashboard and live operations view
+Create a manager-focused command centre that answers: what is ready, what is late, what is blocked, and what needs my attention right now?
+Event overview: event date/time, venue/zone information, event status, manager, and overall readiness.
+Team status cards: each team's lead, member count, current task, progress, next deadline, overdue count, and latest update.
+Live task board with filters by team, lead, member, status, priority, due time, and location/zone.
+Critical/urgent queue, blocked tasks, tasks awaiting verification, and deadlines approaching within configurable windows.
+Evidence review inbox showing recently submitted photos/videos and the related task.
+Activity feed showing who changed what and when.
+Timeline/calendar view for event milestones and setup slots.
+Team workload view to identify overloaded or unassigned members.
+Provide a high-contrast, quick-scan Event Day Mode optimized for phones and tablets.
+9. Event templates and reusable workflows
+Support event templates so an organizer can create a wedding, corporate conference, concert, birthday, or custom event and start with a useful checklist. Templates should be editable and should create real tasks, subtasks, suggested teams, dependencies, default evidence requirements, and suggested time offsets. Do not hardcode wedding-specific assumptions into the task engine.
+Example default teams: Catering; Stage & Decoration; Chairs & Tables; Lights & Equipment; Camera & Photography; Guest Hospitality; Venue & Logistics; Security; Transportation; Cleanup. Teams must be fully configurable.
+10. Multilingual experience: English, Hindi, Marathi
+Provide a language selector in onboarding, profile settings, and accessible app navigation.
+Support English, Hindi (हिन्दी), and Marathi (मराठी) for navigation, buttons, validation, system messages, notifications, task statuses, and help text.
+Use a maintainable localization framework such as i18next with Next.js/React integration and separate translation resource files.
+Use Unicode-safe fonts and layouts. Test Devanagari rendering, line wrapping, search, and mixed-language content.
+Allow user-generated task titles, descriptions, and chat messages in any language; do not force-translate user content.
+Store a user's preferred language and use it for system notifications. Keep event content language-neutral.
+Design for future additional languages without rewriting components.
+11. PWA and mobile-first requirements
+Make the web application installable as a PWA on supported Android, desktop, and iOS browsers, subject to platform limitations.
+Implement a valid web app manifest, service worker, install experience, app icons, theme colors, and standalone display mode.
+Build responsive layouts for phones, tablets, and desktops. The most important field workflows must be comfortable on a phone.
+Cache the application shell and safe read-only data for offline access. Clearly show online/offline/syncing state.
+Queue permitted offline actions such as draft task updates or comments and synchronize when connectivity returns.
+Handle conflicts safely: show when server data changed and avoid silently overwriting newer task states.
+Do not claim that real-time chat, push notifications, or uploads work offline. Queue uploads only if implemented safely and show their pending state.
+Request camera, microphone, and notification permissions only when the user invokes the relevant feature and explain why.
+12. Suggested technology architecture
+Use the following stack unless a documented technical reason justifies a compatible alternative:
+Layer
+Preferred choice / guidance
+Frontend
+Next.js with React, TypeScript, Tailwind CSS, and accessible reusable components. Use JavaScript only where a library requires it; prefer TypeScript for application code.
+Backend
+Node.js + Express.js + TypeScript, exposing versioned REST APIs and Socket.IO for real-time communication.
+Database
+MongoDB Atlas free tier if its current limits fit the MVP, or Firebase/Firestore if the data model and current free plan are a better fit. Choose one primary source of truth; do not duplicate core task state across databases.
+Authentication
+Firebase Authentication free offerings where suitable, or secure backend-managed authentication. Validate identity tokens on the Express server and map users to organization/event roles.
+Real-time
+Socket.IO rooms and server-side authorization for chat, task updates, presence, and notifications. Reconnect and resync after network loss.
+File storage
+Evaluate Firebase Storage or another genuinely free-tier object store. Verify current billing requirements, storage quotas, egress limits, and whether a billing account is required before selecting it.
+Push notifications
+Firebase Cloud Messaging/Web Push where supported and available without paid API usage.
+Cache / ephemeral state
+Redis is optional for caching, rate limits, presence, and job coordination. Use only a free plan whose current limits are verified. The app must remain functional without Redis.
+Validation
+Zod or an equivalent schema validator for request payloads and shared validation rules.
+Testing
+Vitest/Jest for unit tests, Supertest for API tests, and Playwright for critical end-to-end flows.
+Dev environment
+Docker and Docker Compose for local development and reproducible services. Production containers are optional depending on the hosting platform.
+13. Hosting and zero-cost constraint
+Target deployment: Next.js frontend on Vercel and Express backend on Render. Use environment variables for all secrets and deployment-specific URLs. Configure CORS, HTTPS, health checks, production logging, and the frontend API base URL correctly.
+Use only free APIs, open-source libraries, and free service tiers for the initial build. Do not activate paid plans, paid add-ons, paid APIs, or services that require a paid commitment.
+Before choosing any hosted service, check its current official pricing and free-tier terms. Free quotas, billing requirements, storage policies, sleeping behavior, and bandwidth limits can change.
+Do not describe a service as permanently free. Document its current limits and the consequences of exceeding them.
+Design for free-tier constraints: image/video size limits, upload quotas, database limits, cold starts, sleeping services, WebSocket connection limits, and bandwidth.
+Render free web services may sleep or have other restrictions. Make the UI resilient to cold starts and temporary disconnects; do not promise uninterrupted real-time service on a sleeping free instance.
+Do not store uploads on an ephemeral application filesystem. Use object storage or clearly label local-only development storage.
+Do not use paid Google Maps, geocoding, SMS, email delivery, AI, transcription, or WhatsApp APIs. If such a feature is later desired, make it optional and replaceable.
+Provide a cost checklist before deployment and stop for approval if a feature requires enabling billing.
+14. Security, privacy, and reliability
+Use secure authentication, authorization, password/session protections, token expiry/refresh strategy, and logout/session revocation as appropriate.
+Validate and sanitize all user input. Protect against injection, XSS, CSRF where applicable, brute force, abuse, and mass assignment.
+Use strict organization/event/team/conversation-level access checks on every API, socket room, and file access request.
+Use signed or otherwise access-controlled file URLs where supported. Never expose private evidence through guessable public URLs.
+Enforce upload MIME/type, extension, size, and authorization checks; do not trust client-provided metadata.
+Rate-limit login, uploads, chat, and sensitive endpoints. Add safe error messages without leaking secrets or internal stack traces.
+Keep secrets out of source control and frontend bundles. Provide .env.example files with placeholders only.
+Maintain audit logs for assignments, status changes, approvals, rejections, deadline changes, membership changes, and administrative actions.
+Plan backups/export for important operational data within the selected provider's free capabilities. Explain limitations rather than implying guaranteed backups.
+15. Core data model
+Design a normalized, maintainable schema (or document-oriented equivalent) with at least these entities/collections:
+Organization: name, settings, supported languages, createdBy.
+User: profile, preferredLanguage, authentication identity reference, account status.
+OrganizationMembership: user, organization, role, invitation status.
+Event: organization, name, type, venue, timezone, start/end date, manager, status.
+EventMembership: event, user, role/scope, membership status.
+Team: event, name, description, lead, members, color/icon, active status.
+Task: event, team, parentTask, title, description, status, priority, assignee, creator, schedule, location/zone, dependencies, evidence policy.
+TaskActivity: task, actor, action, old/new values, timestamp, metadata.
+Evidence: task, uploader, storage key, media type, size, caption, review status, reviewer, review note, timestamps.
+Conversation: event, type (global/team/direct), participants or team reference, permissions.
+Message: conversation, sender, content, attachments, voice-note metadata, reply reference, timestamps, edit/delete metadata.
+Notification: recipient, type, related entity, read state, delivery state, timestamp.
+EventTemplate / TemplateTask: reusable teams, task hierarchy, default schedules, dependencies, and evidence rules.
+Define indexes, pagination strategy, retention/deletion behavior, and relationship constraints. Include createdAt/updatedAt and soft-delete/archive behavior where appropriate.
+16. UI/UX direction
+Professional operations dashboard, not a generic admin template. Make high-priority information obvious at a glance.
+Use a consistent design system with clear typography, spacing, status colors, accessible contrast, and responsive navigation.
+Desktop: sidebar navigation, event selector, dashboard, task board, team view, calendar, chat, evidence review, and settings.
+Mobile: bottom navigation or compact navigation, prominent task actions, quick photo capture, one-tap status updates, and easy voice-note recording.
+Make the chat experience familiar without copying WhatsApp branding or protected assets.
+Use clear empty states, loading skeletons, retry actions, offline banners, upload progress, and confirmation dialogs.
+Keep the interface usable in bright outdoor conditions and with one hand. Avoid tiny controls and dense tables on phones.
+17. MVP implementation sequence
+Phase 1 — Foundation: Repository structure, environment setup, authentication, organizations, user profiles, RBAC, event creation, event membership.
+Phase 2 — Teams and tasks: Create teams, assign leads and members, create parent tasks and microtasks, task lifecycle, deadlines, priorities, activity history.
+Phase 3 — Evidence: Photo upload, storage integration, evidence gallery, review/approve/reject workflow, upload limits and retries.
+Phase 4 — Real-time communication: Global event chat, team chat, direct manager/lead chat, Socket.IO authorization, photo messages, voice notes.
+Phase 5 — Operations dashboard: Team progress, urgent queue, overdue tasks, evidence review inbox, timeline, filters, and event-day mode.
+Phase 6 — PWA and localization: Installability, offline shell, safe offline queue, push notifications, English/Hindi/Marathi translations.
+Phase 7 — Hardening and deployment: Automated tests, security review, performance checks, accessibility, Vercel/Render deployment, monitoring, documentation.
+18. Required deliverables
+Working frontend and backend with a clean, documented repository structure.
+Database schema/models, migrations or initialization scripts, and seed data for a realistic demo event.
+API documentation including authentication, request/response examples, error codes, and authorization rules.
+Socket event documentation and room authorization rules.
+.env.example files with no real secrets.
+Docker Compose configuration for local development where useful.
+Automated tests for role permissions, task assignment, evidence review, conversation access, and key user journeys.
+Deployment instructions for Vercel and Render, including environment variables, CORS, storage configuration, and health checks.
+PWA installation/offline behavior documentation and known browser limitations.
+English, Hindi, and Marathi translation files.
+A README describing architecture, setup, limitations of free tiers, and how to add another event template or language.
+19. Acceptance criteria / definition of done
+An event manager can create an event, create five or more teams, assign a lead to each, and add a variable number of members.
+A manager can assign a timed team-level task; only the relevant lead and authorized managers can access it.
+A team lead can break the task into microtasks and assign them to their own team members.
+A member can update a microtask and submit photo evidence from a phone.
+The lead can review member work and submit the parent task for manager verification.
+The manager can inspect the evidence, approve completion, or request rework with a reason.
+Urgent, blocked, due-soon, and overdue work is visible in the manager dashboard with correct timestamps.
+The manager can message everyone in the event, a particular team, or an individual lead, subject to permissions.
+Users can send and play voice notes and attach photos in supported browsers.
+Users can switch between English, Hindi, and Marathi; core interface strings are translated and user-generated content remains intact.
+The PWA can be installed on supported devices and provides a clear, safe offline experience.
+Unauthorized users cannot access another team's tasks, private conversations, evidence files, or event data by manipulating API calls or socket events.
+Core workflows pass automated tests and are documented for local setup and deployment.
+20. Instructions for the AI development process
+Begin by proposing the architecture, repository structure, role-permission matrix, database schema, API contract, and real-time event design. Identify risks and unresolved decisions before coding.
+Implement in small, reviewable phases. Do not generate the entire application in one unstructured code dump.
+After each phase, run the relevant tests, report what passed and failed, and fix actual defects before proceeding.
+Use realistic seed data: one wedding event, an event manager, five team leads, and multiple members across teams.
+Do not fabricate successful test results. Clearly distinguish implemented, tested, partially tested, and not implemented features.
+Do not introduce paid services or silently enable billing. If a free-tier limitation blocks a feature, explain it and propose a free alternative or an explicitly optional future enhancement.
+Prioritize secure authorization and reliable task/evidence workflows over decorative animations or unnecessary complexity.
+Ask a concise clarification only when a decision materially blocks implementation; otherwise choose a sensible, documented default.
+Final product outcome
+Deliver a multilingual, mobile-first event operations platform where an event manager can coordinate multiple teams in real time, delegate work through team leads, monitor timed tasks, receive photo/video proof, review completion, identify blockers, and communicate with the whole event or specific teams from one installable web application. The product must be modular, secure, testable, and designed to run within verified free-tier limits for its initial MVP.
+END OF MASTER PROMPT

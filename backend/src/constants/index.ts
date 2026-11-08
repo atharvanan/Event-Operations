@@ -1,0 +1,57 @@
+export enum OrgRole {
+  OWNER = 'OWNER',
+  ADMIN = 'ADMIN',
+  MEMBER = 'MEMBER',
+}
+
+export enum EventRole {
+  EVENT_MANAGER = 'EVENT_MANAGER',
+  TEAM_LEAD = 'TEAM_LEAD',
+  TEAM_MEMBER = 'TEAM_MEMBER',
+  VENDOR_CLIENT = 'VENDOR_CLIENT',
+}
+
+export enum TaskStatus {
+  TO_DO = 'TO_DO',
+  ACKNOWLEDGED = 'ACKNOWLEDGED',
+  IN_PROGRESS = 'IN_PROGRESS',
+  BLOCKED = 'BLOCKED',
+  SUBMITTED_FOR_REVIEW = 'SUBMITTED_FOR_REVIEW',
+  REWORK_REQUIRED = 'REWORK_REQUIRED',
+  COMPLETED = 'COMPLETED',
+}
+
+export enum TaskPriority {
+  LOW = 'LOW',
+  MEDIUM = 'MEDIUM',
+  HIGH = 'HIGH',
+  URGENT = 'URGENT',
+  CRITICAL = 'CRITICAL',
+}
+
+export enum EvidenceReviewStatus {
+  PENDING = 'PENDING',
+  APPROVED = 'APPROVED',
+  REJECTED = 'REJECTED',
+}
+
+export enum MediaType {
+  PHOTO = 'PHOTO',
+  VIDEO = 'VIDEO',
+  AUDIO = 'AUDIO',
+}
+
+export enum ConversationType {
+  GLOBAL_EVENT = 'GLOBAL_EVENT',
+  MANAGER_TEAM = 'MANAGER_TEAM',
+  MANAGER_LEAD = 'MANAGER_LEAD',
+  TEAM_INTERNAL = 'TEAM_INTERNAL',
+  DIRECT = 'DIRECT',
+}
+
+export enum MessageType {
+  TEXT = 'TEXT',
+  PHOTO = 'PHOTO',
+  VOICE_NOTE = 'VOICE_NOTE',
+  TASK_LINK = 'TASK_LINK',
+}

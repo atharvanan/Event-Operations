@@ -1,0 +1,88 @@
+{
+  "app_name": "EventOps",
+  "app_tagline": "On-Ground Event Operations & Coordination",
+  "nav": {
+    "dashboard": "Operations Dashboard",
+    "tasks": "Task Board",
+    "teams": "Teams",
+    "evidence": "Evidence Review",
+    "chat": "Live Comms",
+    "day_mode": "Event Day Mode",
+    "settings": "Settings",
+    "logout": "Log Out"
+  },
+  "auth": {
+    "login_title": "Sign In to Operations",
+    "login_subtitle": "Access your event workspace, assigned tasks, and team channels",
+    "register_title": "Create Operations Account",
+    "register_subtitle": "Start coordinating teams, microtasks, and proof of work",
+    "email": "Email Address",
+    "password": "Password",
+    "name": "Full Name",
+    "phone": "Phone Number",
+    "org_name": "Organization / Company Name",
+    "language_label": "Interface Language",
+    "sign_in": "Sign In",
+    "register": "Register",
+    "have_account": "Already have an account?",
+    "need_account": "Don't have an account?",
+    "invalid_creds": "Invalid email or password."
+  },
+  "events": {
+    "title": "My Events",
+    "create_event": "Create New Event",
+    "no_events": "No events found. Create your first event to get started.",
+    "event_name": "Event Name",
+    "venue": "Venue / Location",
+    "type": "Event Type",
+    "dates": "Dates",
+    "zones": "Operational Zones",
+    "readiness": "Readiness",
+    "manager": "Manager",
+    "status": "Status"
+  },
+  "tasks": {
+    "title": "Task Management",
+    "create_task": "Create Team Task",
+    "create_microtask": "Add Microtask",
+    "status": {
+      "TO_DO": "To Do",
+      "ACKNOWLEDGED": "Acknowledged",
+      "IN_PROGRESS": "In Progress",
+      "BLOCKED": "Blocked",
+      "SUBMITTED_FOR_REVIEW": "Under Review",
+      "REWORK_REQUIRED": "Rework Required",
+      "COMPLETED": "Completed"
+    },
+    "priority": {
+      "LOW": "Low",
+      "MEDIUM": "Medium",
+      "HIGH": "High",
+      "URGENT": "Urgent",
+      "CRITICAL": "Critical"
+    },
+    "urgent_queue": "Urgent & Critical Queue",
+    "blocked_tasks": "Blocked Tasks",
+    "due_soon": "Due Soon",
+    "overdue": "Overdue"
+  },
+  "evidence": {
+    "title": "Evidence Review",
+    "upload_evidence": "Upload Photo / Video Proof",
+    "approved": "Approved",
+    "rejected": "Rejected",
+    "pending": "Pending Review",
+    "approve_btn": "Approve Completion",
+    "reject_btn": "Request Rework",
+    "rework_reason": "Specify Reason for Rework"
+  },
+  "common": {
+    "loading": "Loading...",
+    "save": "Save Changes",
+    "cancel": "Cancel",
+    "submit": "Submit",
+    "online": "Online",
+    "offline": "Offline Mode",
+    "connecting": "Connecting to server..."
+  }
+}
