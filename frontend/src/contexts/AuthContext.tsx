@@ -9,6 +9,7 @@ interface AuthContextType {
   user: IUserProfile | null;
   token: string | null;
   organization: IOrganization | null;
+  setOrganization: (org: IOrganization | null) => void;
   currentEvent: IEvent | null;
   currentRole: string | null;
   isLoading: boolean;
@@ -24,10 +25,19 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<IUserProfile | null>(null);
   const [token, setToken] = useState<string | null>(null);
-  const [organization, setOrganization] = useState<IOrganization | null>(null);
+  const [organization, setOrganizationState] = useState<IOrganization | null>(null);
   const [currentEvent, setCurrentEventState] = useState<IEvent | null>(null);
   const [currentRole, setCurrentRole] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
+
+  const setOrganization = (org: IOrganization | null) => {
+    setOrganizationState(org);
+    if (org) {
+      localStorage.setItem('eventops_org', JSON.stringify(org));
+    } else {
+      localStorage.removeItem('eventops_org');
+    }
+  };
 
   useEffect(() => {
     const savedToken = localStorage.getItem('eventops_token');
@@ -41,7 +51,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       try {
         setToken(savedToken);
         setUser(JSON.parse(savedUser));
-        if (savedOrg) setOrganization(JSON.parse(savedOrg));
+        if (savedOrg) {
+          setOrganizationState(JSON.parse(savedOrg));
+        } else {
+          // Fetch /auth/me to automatically retrieve or provision the user's organization
+          api.get('/auth/me').then((res) => {
+            const org = res.data?.data?.memberships?.[0]?.orgId;
+            if (org) {
+              setOrganization(org);
+            }
+          }).catch(() => {});
+        }
         if (savedEvent) setCurrentEventState(JSON.parse(savedEvent));
         if (savedRole) setCurrentRole(savedRole);
       } catch (e) {
@@ -159,6 +179,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         user,
         token,
         organization,
+        setOrganization,
         currentEvent,
         currentRole,
         isLoading,

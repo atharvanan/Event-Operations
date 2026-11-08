@@ -22,7 +22,7 @@ import {
 export default function EventsPage() {
   const { t } = useTranslation();
   const router = useRouter();
-  const { user, organization, setCurrentEvent } = useAuth();
+  const { user, organization, setOrganization, setCurrentEvent } = useAuth();
 
   const [events, setEvents] = useState<IEvent[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -61,10 +61,6 @@ export default function EventsPage() {
 
   const handleCreateEvent = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!organization) {
-      setFormError('Organization required to create an event.');
-      return;
-    }
 
     try {
       setIsSubmitting(true);
@@ -76,7 +72,7 @@ export default function EventsPage() {
         .filter(Boolean);
 
       const res = await api.post('/events', {
-        orgId: organization._id,
+        orgId: organization?._id,
         name,
         type,
         venue,
@@ -84,6 +80,10 @@ export default function EventsPage() {
         endDate: new Date(endDate).toISOString(),
         zones: splitZones,
       });
+
+      if (res.data.organization && !organization && setOrganization) {
+        setOrganization(res.data.organization);
+      }
 
       setShowCreateModal(false);
       setName('');

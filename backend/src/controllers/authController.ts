@@ -41,24 +41,23 @@ export const register = async (req: Request, res: Response): Promise<void> => {
       preferredLanguage: preferredLanguage || 'en',
     });
 
-    let organization = null;
-    let membership = null;
+    // Ensure every user has an active Organization (auto-provision if not provided)
+    const orgName = (organizationName && organizationName.trim()) ? organizationName.trim() : `${user.name}'s Events`;
+    const slugBase = orgName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || 'events-org';
+    const slug = `${slugBase}-${Date.now().toString().slice(-4)}`;
 
-    if (organizationName) {
-      const slug = organizationName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
-      organization = await Organization.create({
-        name: organizationName,
-        slug: `${slug}-${Date.now().toString().slice(-4)}`,
-        ownerId: user._id,
-      });
+    const organization = await Organization.create({
+      name: orgName,
+      slug,
+      ownerId: user._id,
+    });
 
-      membership = await OrganizationMembership.create({
-        userId: user._id,
-        orgId: organization._id,
-        role: OrgRole.OWNER,
-        status: 'active',
-      });
-    }
+    const membership = await OrganizationMembership.create({
+      userId: user._id,
+      orgId: organization._id,
+      role: OrgRole.OWNER,
+      status: 'active',
+    });
 
     const token = generateToken({
       userId: user._id.toString(),
@@ -108,8 +107,27 @@ export const login = async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
-    // Get user's primary organization if any
-    const membership = await OrganizationMembership.findOne({ userId: user._id, status: 'active' }).populate('orgId');
+    // Get user's primary organization if any, or auto-create default workspace
+    let membership = await OrganizationMembership.findOne({ userId: user._id, status: 'active' }).populate('orgId');
+    if (!membership) {
+      const orgName = `${user.name}'s Events`;
+      const slugBase = user.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || 'events-org';
+      const slug = `${slugBase}-${Date.now().toString().slice(-4)}`;
+
+      const newOrg = await Organization.create({
+        name: orgName,
+        slug,
+        ownerId: user._id,
+      });
+
+      membership = await OrganizationMembership.create({
+        userId: user._id,
+        orgId: newOrg._id,
+        role: OrgRole.OWNER,
+        status: 'active',
+      });
+      await membership.populate('orgId');
+    }
 
     const token = generateToken({
       userId: user._id.toString(),
@@ -144,10 +162,31 @@ export const getMe = async (req: AuthenticatedRequest, res: Response): Promise<v
       return;
     }
 
-    const memberships = await OrganizationMembership.find({
+    let memberships = await OrganizationMembership.find({
       userId: req.user._id,
       status: 'active',
     }).populate('orgId');
+
+    if (memberships.length === 0) {
+      const orgName = `${req.user.name}'s Events`;
+      const slugBase = req.user.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || 'events-org';
+      const slug = `${slugBase}-${Date.now().toString().slice(-4)}`;
+
+      const newOrg = await Organization.create({
+        name: orgName,
+        slug,
+        ownerId: req.user._id,
+      });
+
+      const newMembership = await OrganizationMembership.create({
+        userId: req.user._id,
+        orgId: newOrg._id,
+        role: OrgRole.OWNER,
+        status: 'active',
+      });
+      await newMembership.populate('orgId');
+      memberships = [newMembership];
+    }
 
     res.status(200).json({
       success: true,

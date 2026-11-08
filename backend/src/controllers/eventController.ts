@@ -7,6 +7,7 @@ import { Team } from '../models/Team.js';
 import { Task } from '../models/Task.js';
 import { TaskActivity } from '../models/TaskActivity.js';
 import { User } from '../models/User.js';
+import { Organization } from '../models/Organization.js';
 import { OrganizationMembership } from '../models/OrganizationMembership.js';
 import { EventRole, OrgRole, ConversationType, TaskStatus } from '../constants/index.js';
 import { AuthenticatedRequest } from '../middlewares/auth.js';
@@ -15,10 +16,10 @@ export const createEvent = async (req: AuthenticatedRequest, res: Response): Pro
   try {
     const { orgId, name, type, venue, timezone, zones, startDate, endDate, description } = req.body;
 
-    if (!orgId || !name || !venue || !startDate || !endDate) {
+    if (!name || !venue || !startDate || !endDate) {
       res.status(400).json({
         success: false,
-        message: 'Organization ID, name, venue, startDate, and endDate are required.',
+        message: 'Event name, venue, startDate, and endDate are required.',
       });
       return;
     }
@@ -35,8 +36,45 @@ export const createEvent = async (req: AuthenticatedRequest, res: Response): Pro
       return;
     }
 
+    // Resolve or auto-provision Organization so users are never blocked
+    let targetOrgId = orgId;
+    let targetOrgDoc: any = null;
+    if (targetOrgId) {
+      targetOrgDoc = await Organization.findById(targetOrgId);
+    }
+
+    if (!targetOrgDoc) {
+      const membership = await OrganizationMembership.findOne({
+        userId: req.user!._id,
+        status: 'active',
+      }).populate('orgId');
+
+      if (membership && membership.orgId) {
+        targetOrgDoc = membership.orgId;
+        targetOrgId = targetOrgDoc._id;
+      } else {
+        const orgName = `${req.user!.name}'s Events`;
+        const slugBase = req.user!.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || 'events-org';
+        const slug = `${slugBase}-${Date.now().toString().slice(-4)}`;
+
+        targetOrgDoc = await Organization.create({
+          name: orgName,
+          slug,
+          ownerId: req.user!._id,
+        });
+
+        await OrganizationMembership.create({
+          userId: req.user!._id,
+          orgId: targetOrgDoc._id,
+          role: OrgRole.OWNER,
+          status: 'active',
+        });
+        targetOrgId = targetOrgDoc._id;
+      }
+    }
+
     const event = await Event.create({
-      orgId: new mongoose.Types.ObjectId(orgId),
+      orgId: new mongoose.Types.ObjectId(targetOrgId),
       name,
       type: type || 'wedding',
       venue,
@@ -65,7 +103,7 @@ export const createEvent = async (req: AuthenticatedRequest, res: Response): Pro
       participantIds: [req.user!._id],
     });
 
-    res.status(201).json({ success: true, data: event });
+    res.status(201).json({ success: true, data: event, organization: targetOrgDoc });
   } catch (error: any) {
     res.status(500).json({ success: false, message: error.message || 'Error creating event.' });
   }
