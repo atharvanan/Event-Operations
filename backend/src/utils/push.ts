@@ -33,6 +33,7 @@ export interface PushPayload {
 
 export async function sendPushToUser(userId: string, payload: PushPayload): Promise<void> {
   try {
+    if (process.env.NODE_ENV === 'test') return;
     const subscriptions = await PushSubscription.find({ userId });
     if (!subscriptions || subscriptions.length === 0) return;
 

@@ -13,6 +13,7 @@ import evidenceRoutes from './routes/evidenceRoutes.js';
 import chatRoutes from './routes/chatRoutes.js';
 import notificationRoutes from './routes/notificationRoutes.js';
 import { errorHandler } from './middlewares/errorHandler.js';
+import { authenticate } from './middlewares/auth.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -29,6 +30,9 @@ export const createApp = (): Application => {
   if (process.env.NODE_ENV !== 'test') {
     app.use(morgan('dev'));
   }
+
+  // Protect evidence media from unauthenticated public access (EVD-04, SEC-03)
+  app.use('/uploads/evidence', authenticate);
 
   // Static uploads directory
   app.use('/uploads', express.static(path.join(__dirname, '..', 'uploads')));

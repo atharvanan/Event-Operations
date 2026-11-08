@@ -20,13 +20,19 @@ export const authenticate = async (
   next: NextFunction
 ): Promise<void> => {
   try {
+    let token: string | undefined;
     const authHeader = req.headers.authorization;
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      token = authHeader.split(' ')[1];
+    } else if (req.query?.token && typeof req.query.token === 'string') {
+      token = req.query.token;
+    }
+
+    if (!token) {
       res.status(401).json({ success: false, message: 'Authentication required. No token provided.' });
       return;
     }
 
-    const token = authHeader.split(' ')[1];
     const payload = verifyToken(token);
     req.tokenPayload = payload;
 

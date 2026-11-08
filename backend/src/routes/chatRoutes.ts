@@ -4,6 +4,7 @@ import {
   getConversationMessages,
   sendMessage,
   uploadVoiceNote,
+  uploadChatAttachment,
   createDirectConversation,
 } from '../controllers/chatController.js';
 import { authenticate } from '../middlewares/auth.js';
@@ -24,6 +25,11 @@ router.post(
   '/conversations/:conversationId/voice-note',
   chatMediaUpload.single('file'),
   uploadVoiceNote
+);
+router.post(
+  '/conversations/:conversationId/media',
+  chatMediaUpload.single('file'),
+  uploadChatAttachment
 );
 
 export default router;

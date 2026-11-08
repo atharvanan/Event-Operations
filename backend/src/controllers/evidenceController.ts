@@ -127,6 +127,29 @@ export const getTaskEvidence = async (req: AuthenticatedRequest, res: Response):
   try {
     const { taskId } = req.params;
 
+    const task = await Task.findById(taskId);
+    if (!task) {
+      res.status(404).json({ success: false, message: 'Task not found.' });
+      return;
+    }
+
+    const userId = req.user!._id;
+    const event = await Event.findById(task.eventId);
+    const isManager = event?.managerId.toString() === userId.toString();
+    const membership = await EventMembership.findOne({
+      eventId: task.eventId,
+      userId,
+      status: 'active',
+    });
+
+    if (!isManager && !membership) {
+      res.status(403).json({
+        success: false,
+        message: 'Forbidden. You do not have access to view evidence for this task.',
+      });
+      return;
+    }
+
     const evidenceItems = await Evidence.find({ taskId: new mongoose.Types.ObjectId(taskId) })
       .populate('uploaderId', 'name email phone avatarUrl')
       .populate('reviewerId', 'name email phone avatarUrl')
@@ -212,6 +235,15 @@ export const reviewEvidence = async (req: AuthenticatedRequest, res: Response): 
       membership?.role === EventRole.TEAM_LEAD &&
       membership?.teamId?.toString() === task.teamId.toString();
 
+    // Submitting worker cannot self-approve evidence (EVD-08)
+    if (evidence.uploaderId.toString() === userId.toString() && !isManager) {
+      res.status(403).json({
+        success: false,
+        message: 'Submitting worker cannot approve their own evidence submission.',
+      });
+      return;
+    }
+
     // Only Event Manager or the assigned Team Lead can review evidence
     if (!isManager && !isLead) {
       res.status(403).json({
@@ -223,6 +255,11 @@ export const reviewEvidence = async (req: AuthenticatedRequest, res: Response): 
 
     if (reviewStatus === EvidenceReviewStatus.REJECTED && !reviewNote) {
       res.status(400).json({ success: false, message: 'A review note explaining why proof was rejected is required.' });
+      return;
+    }
+
+    if (reviewStatus === EvidenceReviewStatus.CLARIFICATION_REQUESTED && !reviewNote) {
+      res.status(400).json({ success: false, message: 'A note specifying the clarification needed is required.' });
       return;
     }
 

@@ -8,6 +8,7 @@ import { Task } from '../models/Task.js';
 import { ConversationType, MessageType, EventRole } from '../constants/index.js';
 import { AuthenticatedRequest } from '../middlewares/auth.js';
 import { getIO } from '../sockets/io.js';
+import { sanitizeHtml } from '../utils/sanitize.js';
 
 export const getConversations = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
@@ -123,8 +124,20 @@ export const getConversationMessages = async (req: AuthenticatedRequest, res: Re
 export const sendMessage = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
     const { conversationId } = req.params;
-    const { content, messageType = MessageType.TEXT, taskIdReference, replyToMessageId } = req.body;
+    const { content, messageType = MessageType.TEXT, taskIdReference, replyToMessageId, mediaUrl } = req.body;
     const userId = req.user!._id;
+
+    // Validate empty content (CHAT-11)
+    if ((!content || content.trim() === '') && !mediaUrl) {
+      res.status(400).json({ success: false, message: 'Message content or media is required.' });
+      return;
+    }
+
+    // Validate max message length (CHAT-11)
+    if (content && content.length > 2000) {
+      res.status(400).json({ success: false, message: 'Message exceeds maximum length of 2000 characters.' });
+      return;
+    }
 
     const conversation = await Conversation.findById(conversationId);
     if (!conversation) {
@@ -167,11 +180,15 @@ export const sendMessage = async (req: AuthenticatedRequest, res: Response): Pro
       }
     }
 
+    // Sanitize message content to prevent XSS (SEC-01)
+    const sanitizedContent = content ? sanitizeHtml(content.trim()) : '';
+
     const message = await Message.create({
       conversationId: conversation._id,
       senderId: userId,
-      content: content || '',
+      content: sanitizedContent,
       messageType,
+      mediaUrl,
       taskIdReference: taskIdReference ? new mongoose.Types.ObjectId(taskIdReference) : undefined,
       replyToMessageId: replyToMessageId ? new mongoose.Types.ObjectId(replyToMessageId) : undefined,
       readBy: [{ userId, readAt: new Date() }],
@@ -193,6 +210,64 @@ export const sendMessage = async (req: AuthenticatedRequest, res: Response): Pro
     res.status(201).json({ success: true, data: populated });
   } catch (error: any) {
     res.status(500).json({ success: false, message: error.message || 'Error sending message.' });
+  }
+};
+
+export const uploadChatAttachment = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+  try {
+    const { conversationId } = req.params;
+    const { content } = req.body;
+    const file = req.file;
+    const userId = req.user!._id;
+
+    if (!file) {
+      res.status(400).json({ success: false, message: 'No media file uploaded.' });
+      return;
+    }
+
+    const conversation = await Conversation.findById(conversationId);
+    if (!conversation) {
+      res.status(404).json({ success: false, message: 'Conversation not found.' });
+      return;
+    }
+
+    // Authorization
+    const event = await Event.findById(conversation.eventId);
+    const isManager = event?.managerId.toString() === userId.toString();
+    const isParticipant = conversation.participantIds.some((pId) => pId.toString() === userId.toString());
+
+    if (!isManager && !isParticipant) {
+      res.status(403).json({ success: false, message: 'Forbidden. You cannot post in this channel.' });
+      return;
+    }
+
+    const mediaUrl = `/uploads/chat/${file.filename}`;
+    const sanitizedContent = content ? sanitizeHtml(content.trim()) : '';
+    const isImage = file.mimetype.startsWith('image/');
+
+    const message = await Message.create({
+      conversationId: conversation._id,
+      senderId: userId,
+      content: sanitizedContent || (isImage ? 'Image attachment' : 'File attachment'),
+      messageType: isImage ? MessageType.PHOTO : MessageType.FILE,
+      mediaUrl,
+      readBy: [{ userId, readAt: new Date() }],
+    });
+
+    conversation.lastMessageAt = new Date();
+    await conversation.save();
+
+    const populated = await Message.findById(message._id)
+      .populate('senderId', 'name email avatarUrl preferredLanguage');
+
+    const socketIO = getIO();
+    if (socketIO) {
+      socketIO.to(`conv:${conversationId}`).emit('message:received', populated);
+    }
+
+    res.status(201).json({ success: true, data: populated });
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: error.message || 'Error uploading attachment.' });
   }
 };
 

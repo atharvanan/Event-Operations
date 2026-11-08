@@ -17,6 +17,7 @@ router.post('/', requireEventRole([EventRole.EVENT_MANAGER]), createTeam);
 router.get('/', getTeams);
 router.get('/:teamId', getTeamById);
 router.patch('/:teamId', requireEventRole([EventRole.EVENT_MANAGER]), updateTeam);
+router.put('/:teamId', requireEventRole([EventRole.EVENT_MANAGER]), updateTeam);
 
 export default router;
 

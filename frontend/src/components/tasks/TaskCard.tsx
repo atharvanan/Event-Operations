@@ -41,6 +41,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task, onClick, onQuickStatus
     [TaskStatus.SUBMITTED_FOR_REVIEW]: { bg: 'bg-amber-50 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300' },
     [TaskStatus.REWORK_REQUIRED]: { bg: 'bg-orange-50 text-orange-700 dark:bg-orange-950/60 dark:text-orange-300' },
     [TaskStatus.COMPLETED]: { bg: 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300' },
+    [TaskStatus.CANCELLED]: { bg: 'bg-zinc-100 text-zinc-500 line-through dark:bg-zinc-800 dark:text-zinc-400' },
   };
 
   const currentPriorityStyle = priorityStyles[task.priority] || priorityStyles[TaskPriority.MEDIUM];

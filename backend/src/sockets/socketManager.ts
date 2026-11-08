@@ -6,6 +6,7 @@ import { Conversation } from '../models/Conversation.js';
 import { Message } from '../models/Message.js';
 import { Event } from '../models/Event.js';
 import { MessageType, ConversationType } from '../constants/index.js';
+import { sanitizeHtml } from '../utils/sanitize.js';
 
 interface AuthenticatedSocket extends Socket {
   user?: TokenPayload & { _id: string };
@@ -125,6 +126,17 @@ export const setupSocketServer = (io: SocketIOServer): void => {
 
           if (!conversationId) return;
 
+          // Validate empty message and length limits (CHAT-11)
+          if ((!content || content.trim() === '') && !mediaUrl) {
+            socket.emit('error:message', { message: 'Message content or media is required.' });
+            return;
+          }
+
+          if (content && content.length > 2000) {
+            socket.emit('error:message', { message: 'Message exceeds maximum length of 2000 characters.' });
+            return;
+          }
+
           const conversation = await Conversation.findById(conversationId);
           if (!conversation) {
             socket.emit('error:message', { message: 'Conversation not found.' });
@@ -145,11 +157,13 @@ export const setupSocketServer = (io: SocketIOServer): void => {
             return;
           }
 
+          const sanitizedContent = content ? sanitizeHtml(content.trim()) : '';
+
           // Save Message
           const message = await Message.create({
             conversationId: conversation._id,
             senderId: new mongoose.Types.ObjectId(userId),
-            content: content || '',
+            content: sanitizedContent,
             messageType,
             mediaUrl,
             taskIdReference: taskIdReference

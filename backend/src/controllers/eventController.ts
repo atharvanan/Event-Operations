@@ -7,7 +7,8 @@ import { Team } from '../models/Team.js';
 import { Task } from '../models/Task.js';
 import { TaskActivity } from '../models/TaskActivity.js';
 import { User } from '../models/User.js';
-import { EventRole, ConversationType } from '../constants/index.js';
+import { OrganizationMembership } from '../models/OrganizationMembership.js';
+import { EventRole, OrgRole, ConversationType, TaskStatus } from '../constants/index.js';
 import { AuthenticatedRequest } from '../middlewares/auth.js';
 
 export const createEvent = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
@@ -22,6 +23,18 @@ export const createEvent = async (req: AuthenticatedRequest, res: Response): Pro
       return;
     }
 
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+      res.status(400).json({ success: false, message: 'Invalid start date or end date format.' });
+      return;
+    }
+
+    if (end <= start) {
+      res.status(400).json({ success: false, message: 'End date must be after start date.' });
+      return;
+    }
+
     const event = await Event.create({
       orgId: new mongoose.Types.ObjectId(orgId),
       name,
@@ -30,8 +43,8 @@ export const createEvent = async (req: AuthenticatedRequest, res: Response): Pro
       timezone: timezone || 'Asia/Kolkata',
       zones: zones && zones.length > 0 ? zones : ['Main Stage', 'Entrance & Reception', 'Dining Area', 'Guest Lounge'],
       managerId: req.user!._id,
-      startDate: new Date(startDate),
-      endDate: new Date(endDate),
+      startDate: start,
+      endDate: end,
       description: description || '',
       status: 'planning',
     });
@@ -115,7 +128,22 @@ export const getEventById = async (req: AuthenticatedRequest, res: Response): Pr
     });
 
     const isManager = event.managerId.toString() === req.user!._id.toString();
-    const effectiveRole = isManager ? EventRole.EVENT_MANAGER : membership?.role;
+    const orgMembership = await OrganizationMembership.findOne({
+      orgId: event.orgId,
+      userId: req.user!._id,
+      status: 'active',
+    });
+    const isOrgAdmin = orgMembership && (orgMembership.role === OrgRole.OWNER || orgMembership.role === OrgRole.ADMIN);
+
+    if (!isManager && !membership && !isOrgAdmin) {
+      res.status(403).json({
+        success: false,
+        message: 'Forbidden. You do not have access to this event.',
+      });
+      return;
+    }
+
+    const effectiveRole = isManager || isOrgAdmin ? EventRole.EVENT_MANAGER : membership?.role;
 
     res.status(200).json({
       success: true,
@@ -152,7 +180,23 @@ export const updateEvent = async (req: AuthenticatedRequest, res: Response): Pro
     if (name) event.name = name;
     if (venue) event.venue = venue;
     if (zones) event.zones = zones;
-    if (status) event.status = status;
+    if (status) {
+      if (status === 'archived') {
+        const unresolvedTasks = await Task.countDocuments({
+          eventId: event._id,
+          status: { $nin: [TaskStatus.COMPLETED] },
+        });
+
+        if (unresolvedTasks > 0) {
+          res.status(400).json({
+            success: false,
+            message: `Cannot archive event. There are ${unresolvedTasks} unresolved or blocked task(s) remaining.`,
+          });
+          return;
+        }
+      }
+      event.status = status;
+    }
     if (startDate) event.startDate = new Date(startDate);
     if (endDate) event.endDate = new Date(endDate);
     if (description !== undefined) event.description = description;

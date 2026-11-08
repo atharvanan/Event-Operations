@@ -5,8 +5,11 @@ import { Event } from '../models/Event.js';
 import { EventMembership } from '../models/EventMembership.js';
 import { Conversation } from '../models/Conversation.js';
 import { Task } from '../models/Task.js';
-import { EventRole, ConversationType } from '../constants/index.js';
+import { TaskActivity } from '../models/TaskActivity.js';
+import { User } from '../models/User.js';
+import { EventRole, ConversationType, TaskStatus } from '../constants/index.js';
 import { AuthenticatedRequest } from '../middlewares/auth.js';
+import { sanitizeHtml } from '../utils/sanitize.js';
 
 export const createTeam = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
@@ -24,14 +27,27 @@ export const createTeam = async (req: AuthenticatedRequest, res: Response): Prom
       return;
     }
 
+    // Deduplicate and validate memberIds
+    const uniqueMemberIds = memberIds ? Array.from(new Set(memberIds as string[])) : [];
+    if (uniqueMemberIds.length > 0) {
+      const validUsersCount = await User.countDocuments({
+        _id: { $in: uniqueMemberIds.map((id) => new mongoose.Types.ObjectId(id)) },
+        isActive: true,
+      });
+      if (validUsersCount !== uniqueMemberIds.length) {
+        res.status(400).json({ success: false, message: 'One or more team members are invalid or deactivated.' });
+        return;
+      }
+    }
+
     const team = await Team.create({
       eventId: event._id,
-      name,
-      description: description || '',
+      name: sanitizeHtml(name.trim()),
+      description: description ? sanitizeHtml(description.trim()) : '',
       colorHex: colorHex || '#3B82F6',
       icon: icon || 'Users',
       leadId: leadId ? new mongoose.Types.ObjectId(leadId) : undefined,
-      memberIds: memberIds ? memberIds.map((id: string) => new mongoose.Types.ObjectId(id)) : [],
+      memberIds: uniqueMemberIds.map((id: string) => new mongoose.Types.ObjectId(id)),
       isActive: true,
     });
 
@@ -180,13 +196,24 @@ export const updateTeam = async (req: AuthenticatedRequest, res: Response): Prom
       return;
     }
 
-    if (name) team.name = name;
-    if (description !== undefined) team.description = description;
+    if (name) team.name = sanitizeHtml(name.trim());
+    if (description !== undefined) team.description = sanitizeHtml(description.trim());
     if (colorHex) team.colorHex = colorHex;
     if (icon) team.icon = icon;
     if (isActive !== undefined) team.isActive = isActive;
 
     if (leadId !== undefined) {
+      const oldLeadId = team.leadId?.toString();
+      const newLeadIdStr = leadId ? leadId.toString() : null;
+
+      if (oldLeadId && oldLeadId !== newLeadIdStr) {
+        // Demote previous lead's membership to TEAM_MEMBER
+        await EventMembership.updateOne(
+          { eventId: team.eventId, userId: new mongoose.Types.ObjectId(oldLeadId), role: EventRole.TEAM_LEAD },
+          { role: EventRole.TEAM_MEMBER }
+        );
+      }
+
       team.leadId = leadId ? new mongoose.Types.ObjectId(leadId) : undefined;
       if (leadId) {
         await EventMembership.findOneAndUpdate(
@@ -198,11 +225,45 @@ export const updateTeam = async (req: AuthenticatedRequest, res: Response): Prom
     }
 
     if (memberIds && Array.isArray(memberIds)) {
-      team.memberIds = memberIds.map((id: string) => new mongoose.Types.ObjectId(id));
-      for (const mId of memberIds) {
-        if (mId !== leadId) {
+      const uniqueMemberIds = Array.from(new Set(memberIds as string[])).map(
+        (id: string) => new mongoose.Types.ObjectId(id)
+      );
+      const oldMemberIds = team.memberIds.map((id) => id.toString());
+      const newMemberIdsStr = uniqueMemberIds.map((id) => id.toString());
+
+      // Identify removed members
+      const removedMembers = oldMemberIds.filter((id) => !newMemberIdsStr.includes(id));
+      for (const removedId of removedMembers) {
+        // Unassign active/incomplete tasks
+        const affectedTasks = await Task.find({
+          teamId: team._id,
+          assigneeId: new mongoose.Types.ObjectId(removedId),
+          status: { $ne: TaskStatus.COMPLETED },
+        });
+
+        for (const t of affectedTasks) {
+          t.assigneeId = undefined;
+          await t.save();
+          await TaskActivity.create({
+            taskId: t._id,
+            actorId: req.user!._id,
+            action: 'MEMBER_REMOVED_TASK_UNASSIGNED',
+            reason: `Worker removed from team roster: task unassigned for reassignment`,
+          });
+        }
+
+        await EventMembership.deleteOne({
+          eventId: team.eventId,
+          userId: new mongoose.Types.ObjectId(removedId),
+          teamId: team._id,
+        });
+      }
+
+      team.memberIds = uniqueMemberIds;
+      for (const mId of uniqueMemberIds) {
+        if (!team.leadId || mId.toString() !== team.leadId.toString()) {
           await EventMembership.findOneAndUpdate(
-            { eventId: team.eventId, userId: new mongoose.Types.ObjectId(mId) },
+            { eventId: team.eventId, userId: mId },
             { role: EventRole.TEAM_MEMBER, teamId: team._id, status: 'active' },
             { upsert: true }
           );

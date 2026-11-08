@@ -21,6 +21,7 @@ export enum TaskStatus {
   SUBMITTED_FOR_REVIEW = 'SUBMITTED_FOR_REVIEW',
   REWORK_REQUIRED = 'REWORK_REQUIRED',
   COMPLETED = 'COMPLETED',
+  CANCELLED = 'CANCELLED',
 }
 
 export enum TaskPriority {
@@ -35,6 +36,7 @@ export enum EvidenceReviewStatus {
   PENDING = 'PENDING',
   APPROVED = 'APPROVED',
   REJECTED = 'REJECTED',
+  CLARIFICATION_REQUESTED = 'CLARIFICATION_REQUESTED',
 }
 
 export enum MediaType {
@@ -56,6 +58,7 @@ export enum MessageType {
   PHOTO = 'PHOTO',
   VOICE_NOTE = 'VOICE_NOTE',
   TASK_LINK = 'TASK_LINK',
+  FILE = 'FILE',
 }
 
 export interface IConversation {

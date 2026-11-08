@@ -15,17 +15,29 @@ export const register = async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
-    const existingUser = await User.findOne({ email });
+    const trimmedEmail = email.trim().toLowerCase();
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(trimmedEmail)) {
+      res.status(400).json({ success: false, message: 'Please provide a valid email address.' });
+      return;
+    }
+
+    if (password.length < 6) {
+      res.status(400).json({ success: false, message: 'Password must be at least 6 characters long.' });
+      return;
+    }
+
+    const existingUser = await User.findOne({ email: trimmedEmail });
     if (existingUser) {
       res.status(400).json({ success: false, message: 'An account with this email already exists.' });
       return;
     }
 
     const user = await User.create({
-      name,
-      email,
+      name: name.trim(),
+      email: trimmedEmail,
       password,
-      phone,
+      phone: phone ? phone.trim() : undefined,
       preferredLanguage: preferredLanguage || 'en',
     });
 
@@ -83,15 +95,16 @@ export const login = async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
-    const user = await User.findOne({ email }).select('+password');
+    const trimmedEmail = email.trim().toLowerCase();
+    const user = await User.findOne({ email: trimmedEmail }).select('+password');
     if (!user || !user.isActive) {
-      res.status(401).json({ success: false, message: 'Invalid credentials or inactive account.' });
+      res.status(401).json({ success: false, message: 'Invalid email or password.' });
       return;
     }
 
     const isMatch = await user.comparePassword(password);
     if (!isMatch) {
-      res.status(401).json({ success: false, message: 'Invalid credentials.' });
+      res.status(401).json({ success: false, message: 'Invalid email or password.' });
       return;
     }
 

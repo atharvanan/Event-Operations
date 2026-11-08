@@ -11,6 +11,7 @@ import { AuthenticatedRequest } from '../middlewares/auth.js';
 import { Notification } from '../models/Notification.js';
 import { sendPushToUser } from '../utils/push.js';
 import { getIO } from '../sockets/io.js';
+import { sanitizeHtml } from '../utils/sanitize.js';
 
 export const createTask = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
@@ -36,9 +37,33 @@ export const createTask = async (req: AuthenticatedRequest, res: Response): Prom
       return;
     }
 
+    if (title.trim().length > 200) {
+      res.status(400).json({ success: false, message: 'Task title exceeds maximum allowed length of 200 characters.' });
+      return;
+    }
+
+    const sanitizedTitle = sanitizeHtml(title.trim());
+    const sanitizedDescription = description ? sanitizeHtml(description.trim()) : '';
+
     const event = await Event.findById(eventId);
     if (!event) {
       res.status(404).json({ success: false, message: 'Event not found.' });
+      return;
+    }
+
+    if (event.status === 'archived') {
+      res.status(400).json({ success: false, message: 'Cannot create tasks in an archived event.' });
+      return;
+    }
+
+    // Prevent duplicate task creation on repeated submission (TASK-15)
+    const recentDuplicate = await Task.findOne({
+      eventId: event._id,
+      title: title.trim(),
+      createdAt: { $gte: new Date(Date.now() - 3000) },
+    });
+    if (recentDuplicate) {
+      res.status(400).json({ success: false, message: 'Duplicate task submission detected. Please wait before retrying.' });
       return;
     }
 
@@ -72,12 +97,34 @@ export const createTask = async (req: AuthenticatedRequest, res: Response): Prom
         return;
       }
 
+      if (!isManager && isLead && event.permissions && event.permissions.allowLeadTaskCreation === false) {
+        res.status(403).json({
+          success: false,
+          message: 'Lead task creation is disabled by event manager in event permissions.',
+        });
+        return;
+      }
+
+      // Validate assignee belongs to team (TASK-04)
+      if (assigneeId) {
+        const teamDoc = await Team.findById(parentTask.teamId);
+        const isMember = teamDoc?.memberIds.some((m) => m.toString() === assigneeId.toString());
+        const isLeadUser = teamDoc?.leadId?.toString() === assigneeId.toString();
+        if (!isMember && !isLeadUser) {
+          res.status(400).json({
+            success: false,
+            message: 'Assignee must be a member or lead of the assigned team.',
+          });
+          return;
+        }
+      }
+
       const microtask = await Task.create({
         eventId: event._id,
         teamId: parentTask.teamId,
         parentTaskId: parentTask._id,
-        title,
-        description: description || '',
+        title: sanitizedTitle,
+        description: sanitizedDescription,
         zone: zone || parentTask.zone,
         priority: priority || parentTask.priority || TaskPriority.MEDIUM,
         assigneeId: assigneeId ? new mongoose.Types.ObjectId(assigneeId) : undefined,
@@ -133,8 +180,8 @@ export const createTask = async (req: AuthenticatedRequest, res: Response): Prom
       eventId: event._id,
       teamId: team._id,
       parentTaskId: null,
-      title,
-      description: description || '',
+      title: sanitizedTitle,
+      description: sanitizedDescription,
       zone: zone || '',
       priority: priority || TaskPriority.MEDIUM,
       assigneeId: assigneeId ? new mongoose.Types.ObjectId(assigneeId) : team.leadId,
@@ -317,12 +364,28 @@ export const updateTaskStatus = async (req: AuthenticatedRequest, res: Response)
 
     // Authorization checks for state transitions:
     // 1. Final Completion Approval of Parent Task -> Only Event Manager
-    if (status === TaskStatus.COMPLETED && !task.parentTaskId && !isManager) {
-      res.status(403).json({
-        success: false,
-        message: 'Only the Event Manager can give final completion approval for team-level tasks.',
+    if (status === TaskStatus.COMPLETED && !task.parentTaskId) {
+      if (!isManager) {
+        res.status(403).json({
+          success: false,
+          message: 'Only the Event Manager can give final completion approval for team-level tasks.',
+        });
+        return;
+      }
+
+      // Check required child tasks (TASK-12)
+      const incompleteChildren = await Task.countDocuments({
+        parentTaskId: task._id,
+        status: { $ne: TaskStatus.COMPLETED },
       });
-      return;
+
+      if (incompleteChildren > 0) {
+        res.status(400).json({
+          success: false,
+          message: `Cannot complete parent task while ${incompleteChildren} required child task(s) remain open.`,
+        });
+        return;
+      }
     }
 
     // Evidence Verification Gating: task cannot be completed without approved proof
@@ -358,6 +421,17 @@ export const updateTaskStatus = async (req: AuthenticatedRequest, res: Response)
         res.status(403).json({
           success: false,
           message: 'Only the Event Manager can request rework on a team-level task.',
+        });
+        return;
+      }
+    }
+
+    // 2. Cancellation of Task -> Manager or Team Lead (TASK-16)
+    if (status === TaskStatus.CANCELLED) {
+      if (!isManager && !isLead) {
+        res.status(403).json({
+          success: false,
+          message: 'Only the Event Manager or Team Lead can cancel a task.',
         });
         return;
       }
@@ -465,7 +539,7 @@ export const updateTaskStatus = async (req: AuthenticatedRequest, res: Response)
 export const reassignTask = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
     const { taskId } = req.params;
-    const { assigneeId, dueTime, priority } = req.body;
+    const { assigneeId, dueTime, priority, title, description } = req.body;
 
     const task = await Task.findById(taskId);
     if (!task) {
@@ -486,7 +560,7 @@ export const reassignTask = async (req: AuthenticatedRequest, res: Response): Pr
       membership?.role === EventRole.TEAM_LEAD &&
       membership?.teamId?.toString() === task.teamId.toString();
 
-    // Only Manager or Team Lead can reassign / change deadlines
+    // Only Manager or Team Lead can reassign / change deadlines / edit task
     if (!isManager && !isLead) {
       res.status(403).json({
         success: false,
@@ -497,7 +571,33 @@ export const reassignTask = async (req: AuthenticatedRequest, res: Response): Pr
 
     const auditActions: string[] = [];
 
+    if (title && title.trim() !== task.title) {
+      if (title.trim().length > 200) {
+        res.status(400).json({ success: false, message: 'Task title exceeds maximum allowed length of 200 characters.' });
+        return;
+      }
+      const oldTitle = task.title;
+      task.title = sanitizeHtml(title.trim());
+      auditActions.push(`Title changed from "${oldTitle}" to "${task.title}"`);
+    }
+
+    if (description !== undefined && description.trim() !== task.description) {
+      task.description = sanitizeHtml(description.trim());
+      auditActions.push('Instructions updated');
+    }
+
     if (assigneeId && assigneeId !== task.assigneeId?.toString()) {
+      const teamDoc = await Team.findById(task.teamId);
+      const isMember = teamDoc?.memberIds.some((m) => m.toString() === assigneeId.toString());
+      const isLeadUser = teamDoc?.leadId?.toString() === assigneeId.toString();
+      if (!isMember && !isLeadUser) {
+        res.status(400).json({
+          success: false,
+          message: 'Assignee must be a member or lead of the assigned team.',
+        });
+        return;
+      }
+
       const oldAssignee = task.assigneeId?.toString() || 'unassigned';
       task.assigneeId = new mongoose.Types.ObjectId(assigneeId);
       auditActions.push(`Reassigned from ${oldAssignee} to ${assigneeId}`);
