@@ -130,7 +130,8 @@ export const seedDatabase = async () => {
       icon: 'Sparkles',
       lead: { name: 'Pooja Patil', email: 'lead.decor@royalweddings.com', lang: 'mr' },
       workers: [
-        { name: 'Manoj Shinde', email: 'worker.decor1@royalweddings.com', lang: 'mr' },
+        { name: 'Manoj Shinde', email: 'member.stage@royalweddings.com', lang: 'mr' },
+        { name: 'Suresh Patil', email: 'worker.decor1@royalweddings.com', lang: 'mr' },
       ],
       tasks: [
         {
@@ -365,7 +366,7 @@ export const seedDatabase = async () => {
   await disconnectDB();
 };
 
-if (process.argv[1]?.endsWith('seed.ts')) {
+if (!process.env.VITEST) {
   seedDatabase()
     .then(() => process.exit(0))
     .catch((err) => {

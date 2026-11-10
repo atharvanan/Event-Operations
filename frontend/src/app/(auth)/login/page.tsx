@@ -33,9 +33,20 @@ export default function LoginPage() {
     }
   };
 
-  const handleQuickLogin = (demoEmail: string) => {
+  const handleQuickLogin = async (demoEmail: string) => {
     setEmail(demoEmail);
     setPassword('Password@123');
+    setError('');
+    setIsSubmitting(true);
+
+    const result = await login(demoEmail, 'Password@123');
+    setIsSubmitting(false);
+
+    if (result.success) {
+      router.push('/events');
+    } else {
+      setError(result.message || t('auth.invalid_creds'));
+    }
   };
 
   return (
@@ -116,33 +127,45 @@ export default function LoginPage() {
 
           {/* Quick Demo Fill Buttons */}
           <div className="mt-6 pt-5 border-t border-slate-100 dark:border-slate-800">
-            <div className="flex items-center space-x-1 text-[11px] font-bold text-slate-400 mb-2">
-              <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-              <span>Demo Quick-Fill Roles</span>
+            <div className="flex items-center justify-between mb-2.5">
+              <div className="flex items-center space-x-1.5 text-xs font-bold text-slate-700 dark:text-slate-300">
+                <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+                <span>Instant Demo Logins</span>
+              </div>
+              <span className="text-[10px] text-slate-400 font-medium">1-Click Access</span>
             </div>
-            <div className="grid grid-cols-3 gap-1.5">
+            <div className="grid grid-cols-3 gap-2">
               <button
                 type="button"
+                disabled={isSubmitting}
                 onClick={() => handleQuickLogin('manager@royalweddings.com')}
-                className="px-2 py-1.5 text-[11px] font-semibold bg-blue-50 dark:bg-blue-950/50 hover:bg-blue-100 text-blue-700 dark:text-blue-300 rounded-lg text-center truncate border border-blue-200 dark:border-blue-800"
+                className="p-2.5 bg-blue-50/80 dark:bg-blue-950/40 hover:bg-blue-100 dark:hover:bg-blue-900/50 text-blue-800 dark:text-blue-200 rounded-xl text-center border border-blue-200/80 dark:border-blue-800/80 transition-all hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 group flex flex-col items-center"
               >
-                Manager
+                <span className="text-xs font-bold block">Manager</span>
+                <span className="text-[10px] text-blue-600/80 dark:text-blue-400 truncate mt-0.5">Vikram (Owner)</span>
               </button>
               <button
                 type="button"
+                disabled={isSubmitting}
                 onClick={() => handleQuickLogin('lead.catering@royalweddings.com')}
-                className="px-2 py-1.5 text-[11px] font-semibold bg-emerald-50 dark:bg-emerald-950/50 hover:bg-emerald-100 text-emerald-700 dark:text-emerald-300 rounded-lg text-center truncate border border-emerald-200 dark:border-emerald-800"
+                className="p-2.5 bg-emerald-50/80 dark:bg-emerald-950/40 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 text-emerald-800 dark:text-emerald-200 rounded-xl text-center border border-emerald-200/80 dark:border-emerald-800/80 transition-all hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 group flex flex-col items-center"
               >
-                Team Lead
+                <span className="text-xs font-bold block">Team Lead</span>
+                <span className="text-[10px] text-emerald-600/80 dark:text-emerald-400 truncate mt-0.5">Chef Sharma</span>
               </button>
               <button
                 type="button"
+                disabled={isSubmitting}
                 onClick={() => handleQuickLogin('member.stage@royalweddings.com')}
-                className="px-2 py-1.5 text-[11px] font-semibold bg-purple-50 dark:bg-purple-950/50 hover:bg-purple-100 text-purple-700 dark:text-purple-300 rounded-lg text-center truncate border border-purple-200 dark:border-purple-800"
+                className="p-2.5 bg-purple-50/80 dark:bg-purple-950/40 hover:bg-purple-100 dark:hover:bg-purple-900/50 text-purple-800 dark:text-purple-200 rounded-xl text-center border border-purple-200/80 dark:border-purple-800/80 transition-all hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 group flex flex-col items-center"
               >
-                Member
+                <span className="text-xs font-bold block">Member</span>
+                <span className="text-[10px] text-purple-600/80 dark:text-purple-400 truncate mt-0.5">Manoj (Stage)</span>
               </button>
             </div>
+            <p className="text-[10px] text-center text-slate-400 mt-2">
+              Password for all seeded demo accounts is <span className="font-mono text-slate-600 dark:text-slate-300">Password@123</span>
+            </p>
           </div>
 
           <div className="mt-6 text-center">

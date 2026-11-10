@@ -8,6 +8,12 @@
   --background-end-rgb: 255, 255, 255;
 }
 
+.dark {
+  --foreground-rgb: 241, 245, 249;
+  --background-start-rgb: 2, 6, 23;
+  --background-end-rgb: 15, 23, 42;
+}
+
 body {
   color: rgb(var(--foreground-rgb));
   background: linear-gradient(
@@ -18,9 +24,11 @@ body {
     rgb(var(--background-start-rgb));
   min-height: 100vh;
   -webkit-tap-highlight-color: transparent;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
 }
 
-/* Devanagari font optimizations */
+/* Devanagari font optimizations for English, Hindi, and Marathi */
 body, input, button, textarea, select {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans Devanagari", "Helvetica Neue", Arial, sans-serif;
   line-height: 1.5;
@@ -35,9 +43,48 @@ body, input, button, textarea, select {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: rgba(148, 163, 184, 0.4);
-  border-radius: 4px;
+  background: rgba(148, 163, 184, 0.35);
+  border-radius: 9999px;
 }
 ::-webkit-scrollbar-thumb:hover {
   background: rgba(100, 116, 139, 0.6);
+}
+
+/* Glassmorphism utility classes */
+.glass-panel {
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.dark .glass-panel {
+  background: rgba(15, 23, 42, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+/* Pulsing badge indicators */
+@keyframes softPulse {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.65;
+    transform: scale(1.08);
+  }
+}
+
+.pulse-badge {
+  animation: softPulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Smooth card transitions */
+.interactive-card {
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.interactive-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 24px -10px rgba(15, 23, 42, 0.08);
 }
