@@ -3,27 +3,35 @@
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../contexts/AuthContext';
+import { CalendarCheck2 } from 'lucide-react';
 
-export default function HomePage() {
+export default function RootEntryPage() {
   const router = useRouter();
   const { user, isLoading } = useAuth();
 
   useEffect(() => {
     if (!isLoading) {
       if (user) {
-        router.push('/events');
+        router.replace('/home');
       } else {
-        router.push('/login');
+        router.replace('/login');
       }
     }
   }, [user, isLoading, router]);
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950">
-      <div className="flex flex-col items-center space-y-3">
-        <div className="w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
-        <span className="text-xs font-bold text-slate-500">Loading operations...</span>
+    <main
+      id="main-content"
+      className="min-h-screen flex items-center justify-center bg-canvas dark:bg-canvas-dark px-4"
+    >
+      <div className="flex flex-col items-center space-y-3 text-center">
+        <div className="w-14 h-14 rounded-2xl bg-brand-700 text-white flex items-center justify-center shadow-lg shadow-brand-600/30">
+          <CalendarCheck2 className="w-7 h-7 animate-pulse" aria-hidden="true" />
+        </div>
+        <span className="text-sm font-bold text-slate-700 dark:text-slate-200">
+          Loading EventOps...
+        </span>
       </div>
-    </div>
+    </main>
   );
 }

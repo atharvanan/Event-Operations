@@ -54,13 +54,19 @@ export const uploadEvidence = async (req: AuthenticatedRequest, res: Response): 
     }
 
     const isVideo = file.mimetype.startsWith('video/');
+    const isDocument = file.mimetype === 'application/pdf' || file.mimetype.startsWith('text/');
+    const detectedMediaType = isVideo
+      ? MediaType.VIDEO
+      : isDocument
+      ? MediaType.DOCUMENT
+      : MediaType.PHOTO;
     const fileUrl = `/uploads/evidence/${file.filename}`;
 
     const evidence = await Evidence.create({
       taskId: task._id,
       uploaderId: userId,
       fileUrl,
-      mediaType: isVideo ? MediaType.VIDEO : MediaType.PHOTO,
+      mediaType: detectedMediaType,
       fileSizeBytes: file.size,
       caption: caption || '',
       stage: stage === 'during_progress' ? 'during_progress' : 'completion_proof',
@@ -72,7 +78,7 @@ export const uploadEvidence = async (req: AuthenticatedRequest, res: Response): 
       taskId: task._id,
       actorId: userId,
       action: 'EVIDENCE_SUBMITTED',
-      newValue: isVideo ? 'Video Proof' : 'Photo Proof',
+      newValue: isVideo ? 'Video Proof' : isDocument ? 'Document Proof' : 'Photo Proof',
       reason: caption || 'Proof of work submitted for inspection',
     });
 

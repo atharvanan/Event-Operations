@@ -12,6 +12,8 @@ import taskRoutes from './routes/taskRoutes.js';
 import evidenceRoutes from './routes/evidenceRoutes.js';
 import chatRoutes from './routes/chatRoutes.js';
 import notificationRoutes from './routes/notificationRoutes.js';
+import attendeeRoutes from './routes/attendeeRoutes.js';
+import dashboardRoutes from './routes/dashboardRoutes.js';
 import { errorHandler } from './middlewares/errorHandler.js';
 import { authenticate } from './middlewares/auth.js';
 
@@ -31,8 +33,9 @@ export const createApp = (): Application => {
     app.use(morgan('dev'));
   }
 
-  // Protect evidence media from unauthenticated public access (EVD-04, SEC-03)
+  // Protect evidence & resource media from unauthenticated public access (EVD-04, SEC-03)
   app.use('/uploads/evidence', authenticate);
+  app.use('/uploads/resources', authenticate);
 
   // Static uploads directory
   app.use('/uploads', express.static(path.join(__dirname, '..', 'uploads')));
@@ -55,6 +58,8 @@ export const createApp = (): Application => {
   app.use('/api/v1', evidenceRoutes);
   app.use('/api/v1', chatRoutes);
   app.use('/api/v1/notifications', notificationRoutes);
+  app.use('/api/v1', attendeeRoutes);
+  app.use('/api/v1', dashboardRoutes);
 
   // Fallback 404
   app.use((req: Request, res: Response) => {

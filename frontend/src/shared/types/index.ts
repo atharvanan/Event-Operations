@@ -43,6 +43,7 @@ export enum MediaType {
   PHOTO = 'PHOTO',
   VIDEO = 'VIDEO',
   AUDIO = 'AUDIO',
+  DOCUMENT = 'DOCUMENT',
 }
 
 export enum ConversationType {
@@ -120,19 +121,68 @@ export interface IEventPermissions {
   allowWorkerSelfAssignment: boolean;
 }
 
+export interface IEventRegistrationConfig {
+  enabled: boolean;
+  capacity: number;
+  requireApproval: boolean;
+  checkInOpen: boolean;
+  requirements: string[];
+}
+
 export interface IEvent {
   _id: string;
   orgId: string;
   name: string;
   type: string;
   venue: string;
+  address?: string;
+  locationDetails?: string;
+  eventMode?: 'in_person' | 'hybrid' | 'virtual';
+  coverImage?: string;
   zones: string[];
-  managerId: string;
+  managerId: string | any;
   startDate: string;
   endDate: string;
   status: 'planning' | 'live_setup' | 'in_progress' | 'completed' | 'archived';
   description?: string;
   permissions?: IEventPermissions;
+  registrationConfig?: IEventRegistrationConfig;
+  registeredCount?: number;
+  checkedInCount?: number;
+  totalTasksCount?: number;
+  completedTasksCount?: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface IAttendee {
+  _id: string;
+  eventId: string;
+  name: string;
+  email: string;
+  phone?: string;
+  ticketCode: string;
+  qrPayload: string;
+  ticketType: 'General' | 'VIP' | 'Speaker' | 'Staff';
+  status: 'registered' | 'checked_in' | 'cancelled';
+  checkedInAt?: string;
+  checkedInBy?: string | IUserProfile;
+  notes?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface IEventResource {
+  _id: string;
+  eventId: string | any;
+  uploaderId: string | IUserProfile;
+  title: string;
+  description?: string;
+  category: 'Floor Plan' | 'Schedule' | 'Checklist' | 'Briefing' | 'Media' | 'Other';
+  fileUrl: string;
+  fileName: string;
+  mimeType: string;
+  fileSizeBytes: number;
   createdAt: string;
   updatedAt: string;
 }
@@ -246,4 +296,3 @@ export interface IWorkloadWorkerSummary {
   activeTasksCount: number;
   isOverloaded: boolean;
 }
-

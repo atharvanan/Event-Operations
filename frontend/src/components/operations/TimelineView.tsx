@@ -37,7 +37,7 @@ export function TimelineView({ eventId, onSelectTask }: TimelineViewProps) {
   if (isLoading) {
     return (
       <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/90 dark:border-slate-800 p-8 text-center">
-        <div className="w-8 h-8 border-3 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-2" />
+        <div className="w-8 h-8 border-3 border-brand-600 border-t-transparent rounded-full animate-spin mx-auto mb-2" />
         <span className="text-xs font-bold text-slate-400">Loading operational timeline...</span>
       </div>
     );
@@ -85,63 +85,64 @@ export function TimelineView({ eventId, onSelectTask }: TimelineViewProps) {
       {slots.map((slot, idx) => (
         <div
           key={idx}
-          className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/90 dark:border-slate-800 p-6 shadow-sm space-y-4"
+          className="bg-white dark:bg-[#18132B] rounded-3xl border border-brand-200/70 dark:border-brand-800/60 p-6 shadow-sm space-y-4"
         >
-          <div className="border-b border-slate-100 dark:border-slate-800 pb-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+          <div className="border-b border-brand-100 dark:border-brand-800/60 pb-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
             <div>
-              <h3 className="text-sm font-black text-slate-900 dark:text-white flex items-center space-x-2">
-                <Clock className="w-4 h-4 text-blue-600" />
+              <h3 className="text-sm font-black text-[#1A162E] dark:text-white flex items-center space-x-2">
+                <Clock className="w-4 h-4 text-brand-600 dark:text-brand-300" />
                 <span>{slot.title}</span>
               </h3>
-              <p className="text-[11px] text-slate-400 font-medium mt-0.5">{slot.subtitle}</p>
+              <p className="text-xs text-[#524D6B] dark:text-brand-200 font-medium mt-0.5">{slot.subtitle}</p>
             </div>
-            <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 w-fit">
+            <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-brand-50 dark:bg-[#221C3E] text-[#2B244D] dark:text-brand-100 w-fit">
               {slot.tasks.length} task{slot.tasks.length === 1 ? '' : 's'}
             </span>
           </div>
 
           {slot.tasks.length === 0 ? (
-            <div className="py-6 text-center text-xs font-semibold text-slate-400">
+            <div className="py-6 text-center text-xs font-semibold text-[#524D6B] dark:text-brand-200">
               No tasks scheduled for this slot.
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
               {slot.tasks.map((task) => (
-                <div
+                <button
                   key={task._id}
+                  type="button"
                   onClick={() => onSelectTask && onSelectTask(task)}
-                  className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/70 dark:border-slate-800 cursor-pointer hover:border-blue-500 transition space-y-2"
+                  className="w-full text-left p-4 rounded-2xl bg-brand-50/50 dark:bg-[#221C3E] border border-brand-200/70 dark:border-brand-800/60 cursor-pointer hover:border-brand-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 transition space-y-2"
                 >
                   <div className="flex items-center justify-between">
                     <span
-                      className={`text-[10px] font-black uppercase px-2 py-0.5 rounded ${
+                      className={`text-xs font-black uppercase px-2 py-0.5 rounded ${
                         task.status === 'COMPLETED'
                           ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300'
                           : task.status === 'BLOCKED'
                           ? 'bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300'
                           : task.status === 'IN_PROGRESS'
-                          ? 'bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300'
-                          : 'bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-300'
+                          ? 'bg-brand-100 text-brand-700 dark:bg-brand-950 dark:text-brand-200'
+                          : 'bg-brand-50 text-[#2B244D] dark:bg-[#18132B] dark:text-brand-100'
                       }`}
                     >
                       {task.status.replace('_', ' ')}
                     </span>
-                    <span className="text-[10px] font-bold text-slate-400">
+                    <span className="text-xs font-bold text-[#524D6B] dark:text-brand-300">
                       {new Date(task.dueTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                     </span>
                   </div>
 
-                  <h4 className="text-xs font-black text-slate-900 dark:text-white line-clamp-2">
+                  <h4 className="text-xs font-black text-[#1A162E] dark:text-white line-clamp-2">
                     {task.title}
                   </h4>
 
                   {task.zone && (
-                    <div className="flex items-center space-x-1 text-[11px] font-medium text-slate-500">
-                      <MapPin className="w-3 h-3 text-slate-400" />
+                    <div className="flex items-center space-x-1 text-xs font-medium text-[#524D6B] dark:text-brand-200">
+                      <MapPin className="w-3 h-3 text-brand-500" />
                       <span>{task.zone}</span>
                     </div>
                   )}
-                </div>
+                </button>
               ))}
             </div>
           )}

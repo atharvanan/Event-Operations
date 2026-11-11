@@ -1,6 +1,7 @@
 import type { Config } from 'tailwindcss';
 
 const config: Config = {
+  darkMode: 'class',
   content: [
     './src/pages/**/*.{js,ts,jsx,tsx,mdx}',
     './src/components/**/*.{js,ts,jsx,tsx,mdx}',
@@ -10,22 +11,36 @@ const config: Config = {
     extend: {
       colors: {
         brand: {
-          50: '#eff6ff',
-          100: '#dbeafe',
-          500: '#3b82f6',
-          600: '#2563eb',
-          700: '#1d4ed8',
-          900: '#1e3a8a',
+          50: '#f4f2fc',
+          100: '#ebe7f9',
+          200: '#d8d0f2',
+          300: '#bbb0e8',
+          400: '#9383d6',
+          500: '#6752b8',
+          600: '#43328E',
+          700: '#352675',
+          800: '#2A1D5D',
+          900: '#221849',
+          950: '#160F30',
+        },
+        canvas: {
+          light: '#F5F4FA',
+          card: '#FFFFFF',
+          tint: '#EFEBF9',
         },
         ops: {
-          todo: '#64748b',
-          ack: '#6366f1',
-          progress: '#0284c7',
-          blocked: '#dc2626',
-          review: '#d97706',
-          rework: '#ea580c',
-          completed: '#16a34a',
+          todo: '#475569',
+          ack: '#43328E',
+          progress: '#1D4ED8',
+          blocked: '#B91C1C',
+          review: '#B45309',
+          rework: '#C2410C',
+          completed: '#15803D',
         },
+      },
+      boxShadow: {
+        soft: '0 2px 12px -2px rgba(34, 24, 73, 0.06), 0 1px 4px -1px rgba(34, 24, 73, 0.04)',
+        card: '0 8px 24px -6px rgba(34, 24, 73, 0.08), 0 2px 6px -2px rgba(34, 24, 73, 0.04)',
       },
       fontFamily: {
         sans: ['Inter', 'Noto Sans Devanagari', 'system-ui', 'sans-serif'],

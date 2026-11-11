@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { api } from '../../lib/api';
 import { ITask, ITeam, TaskPriority, MediaType } from '@shared/types';
-import { X, Layers, Clock, AlertCircle } from 'lucide-react';
+import { Modal } from '../common/Modal';
 
 interface CreateTaskModalProps {
   eventId: string;
@@ -86,188 +86,188 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
     }
   };
 
+  const modalTitle = parentTask ? `Add Microtask under "${parentTask.title}"` : 'Create Team Outcome Task';
+
   return (
-    <div className="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 max-w-lg w-full p-6 shadow-2xl max-h-[90vh] overflow-y-auto animate-in fade-in zoom-in-95 duration-150">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center space-x-2">
-            <Layers className="w-5 h-5 text-blue-600" />
-            <h3 className="font-bold text-base text-slate-900 dark:text-white">
-              {parentTask ? `Add Microtask under "${parentTask.title}"` : 'Create Team Outcome Task'}
-            </h3>
-          </div>
-          <button type="button" onClick={onClose} className="text-slate-400 hover:text-slate-600 p-1">
-            <X className="w-5 h-5" />
-          </button>
+    <Modal isOpen={true} onClose={onClose} title={modalTitle} maxWidth="lg">
+      {error && (
+        <div
+          role="alert"
+          aria-live="assertive"
+          className="mb-4 p-3.5 bg-red-50 dark:bg-red-950/60 text-red-700 dark:text-red-300 text-xs font-semibold rounded-xl border border-red-300 dark:border-red-800"
+        >
+          {error}
+        </div>
+      )}
+
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div>
+          <label htmlFor="task-title" className="block text-xs font-bold text-[#2B244D] dark:text-brand-100 mb-1">
+            Task Title *
+          </label>
+          <input
+            id="task-title"
+            type="text"
+            required
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            placeholder={parentTask ? 'e.g. Set up Sterno fuel and chafing dishes' : 'e.g. Stage Decoration & Floral Backdrop'}
+            className="w-full px-3.5 py-2.5 text-sm rounded-xl border border-brand-200 dark:border-brand-700 bg-white dark:bg-[#221C3E] text-[#1A162E] dark:text-white placeholder:text-[#645E80] dark:placeholder:text-brand-300 focus:outline-none focus:ring-2 focus:ring-brand-500 transition-all min-h-[44px]"
+          />
         </div>
 
-        {error && (
-          <div className="mb-4 p-3 bg-red-50 text-red-600 text-xs rounded-xl border border-red-200 flex items-center space-x-2">
-            <AlertCircle className="w-4 h-4 shrink-0" />
-            <span>{error}</span>
-          </div>
-        )}
+        <div>
+          <label htmlFor="task-description" className="block text-xs font-bold text-[#2B244D] dark:text-brand-100 mb-1">
+            Detailed Instructions
+          </label>
+          <textarea
+            id="task-description"
+            rows={3}
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            placeholder="Provide exact execution specifications, safety steps, or delivery guidelines..."
+            className="w-full px-3.5 py-2.5 text-sm rounded-xl border border-brand-200 dark:border-brand-700 bg-white dark:bg-[#221C3E] text-[#1A162E] dark:text-white placeholder:text-[#645E80] dark:placeholder:text-brand-300 focus:outline-none focus:ring-2 focus:ring-brand-500 transition-all"
+          />
+        </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-              Task Title *
-            </label>
-            <input
-              type="text"
-              required
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder={parentTask ? 'e.g. Set up Sterno fuel and chafing dishes' : 'e.g. Stage Decoration & Floral Backdrop'}
-              className="w-full px-3.5 py-2 text-sm rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white"
-            />
-          </div>
-
-          <div>
-            <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-              Detailed Instructions
-            </label>
-            <textarea
-              rows={3}
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="Provide exact execution specifications, safety steps, or delivery guidelines..."
-              className="w-full px-3.5 py-2 text-sm rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white"
-            />
-          </div>
-
-          {!parentTask && (
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                  Responsible Team *
-                </label>
-                <select
-                  value={teamId}
-                  onChange={(e) => setTeamId(e.target.value)}
-                  className="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white"
-                >
-                  {teams.map((tm) => (
-                    <option key={tm._id} value={tm._id}>
-                      {tm.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                  Location / Zone
-                </label>
-                <input
-                  type="text"
-                  value={zone}
-                  onChange={(e) => setZone(e.target.value)}
-                  placeholder="e.g. Main Stage, Hall A"
-                  className="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white"
-                />
-              </div>
-            </div>
-          )}
-
-          <div className="grid grid-cols-2 gap-3">
+        {!parentTask && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
             <div>
-              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                Priority
+              <label htmlFor="task-team" className="block text-xs font-bold text-[#2B244D] dark:text-brand-100 mb-1">
+                Responsible Team *
               </label>
               <select
-                value={priority}
-                onChange={(e) => setPriority(e.target.value as TaskPriority)}
-                className="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white"
+                id="task-team"
+                value={teamId}
+                onChange={(e) => setTeamId(e.target.value)}
+                className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-brand-200 dark:border-brand-700 bg-white dark:bg-[#221C3E] text-[#1A162E] dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500 transition-all min-h-[44px]"
               >
-                <option value={TaskPriority.LOW}>Low</option>
-                <option value={TaskPriority.MEDIUM}>Medium</option>
-                <option value={TaskPriority.HIGH}>High</option>
-                <option value={TaskPriority.URGENT}>Urgent</option>
-                <option value={TaskPriority.CRITICAL}>Critical</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                Assignee
-              </label>
-              <select
-                value={assigneeId}
-                onChange={(e) => setAssigneeId(e.target.value)}
-                className="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white"
-              >
-                <option value="">{parentTask ? 'Select worker' : 'Team Lead (Default)'}</option>
-                {candidateAssignees.map((cand) => (
-                  <option key={cand._id} value={cand._id}>
-                    {cand.name}
+                {teams.map((tm) => (
+                  <option key={tm._id} value={tm._id}>
+                    {tm.name}
                   </option>
                 ))}
               </select>
             </div>
+
+            <div>
+              <label htmlFor="task-zone" className="block text-xs font-bold text-[#2B244D] dark:text-brand-100 mb-1">
+                Location / Zone
+              </label>
+              <input
+                id="task-zone"
+                type="text"
+                value={zone}
+                onChange={(e) => setZone(e.target.value)}
+                placeholder="e.g. Main Stage, Hall A"
+                className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-brand-200 dark:border-brand-700 bg-white dark:bg-[#221C3E] text-[#1A162E] dark:text-white placeholder:text-[#645E80] dark:placeholder:text-brand-300 focus:outline-none focus:ring-2 focus:ring-brand-500 transition-all min-h-[44px]"
+              />
+            </div>
+          </div>
+        )}
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+          <div>
+            <label htmlFor="task-priority" className="block text-xs font-bold text-[#2B244D] dark:text-brand-100 mb-1">
+              Priority
+            </label>
+            <select
+              id="task-priority"
+              value={priority}
+              onChange={(e) => setPriority(e.target.value as TaskPriority)}
+              className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-brand-200 dark:border-brand-700 bg-white dark:bg-[#221C3E] text-[#1A162E] dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500 transition-all min-h-[44px]"
+            >
+              <option value={TaskPriority.LOW}>Low</option>
+              <option value={TaskPriority.MEDIUM}>Medium</option>
+              <option value={TaskPriority.HIGH}>High</option>
+              <option value={TaskPriority.URGENT}>Urgent</option>
+              <option value={TaskPriority.CRITICAL}>Critical</option>
+            </select>
           </div>
 
           <div>
-            <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-              Due Date & Time *
+            <label htmlFor="task-assignee" className="block text-xs font-bold text-[#2B244D] dark:text-brand-100 mb-1">
+              Assignee
+            </label>
+            <select
+              id="task-assignee"
+              value={assigneeId}
+              onChange={(e) => setAssigneeId(e.target.value)}
+              className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-brand-200 dark:border-brand-700 bg-white dark:bg-[#221C3E] text-[#1A162E] dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500 transition-all min-h-[44px]"
+            >
+              <option value="">{parentTask ? 'Select worker' : 'Team Lead (Default)'}</option>
+              {candidateAssignees.map((cand) => (
+                <option key={cand._id} value={cand._id}>
+                  {cand.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <label htmlFor="task-due-time" className="block text-xs font-bold text-[#2B244D] dark:text-brand-100 mb-1">
+            Due Date & Time *
+          </label>
+          <input
+            id="task-due-time"
+            type="datetime-local"
+            required
+            value={dueTime}
+            onChange={(e) => setDueTime(e.target.value)}
+            className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-brand-200 dark:border-brand-700 bg-white dark:bg-[#221C3E] text-[#1A162E] dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500 transition-all min-h-[44px]"
+          />
+        </div>
+
+        {/* Evidence Configuration */}
+        <div className="p-3.5 bg-brand-50/50 dark:bg-[#221C3E] rounded-xl border border-brand-200 dark:border-brand-800 space-y-2.5">
+          <div className="flex items-center justify-between">
+            <label htmlFor="task-evidence-required" className="text-xs font-bold text-[#2B244D] dark:text-brand-100 cursor-pointer">
+              Require Photo/Video Completion Proof
             </label>
             <input
-              type="datetime-local"
-              required
-              value={dueTime}
-              onChange={(e) => setDueTime(e.target.value)}
-              className="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white"
+              id="task-evidence-required"
+              type="checkbox"
+              checked={evidenceRequired}
+              onChange={(e) => setEvidenceRequired(e.target.checked)}
+              className="w-5 h-5 text-brand-600 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
             />
           </div>
 
-          {/* Evidence Configuration */}
-          <div className="p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-200 dark:border-slate-700 space-y-2">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-slate-700 dark:text-slate-300">
-                Require Photo/Video Completion Proof
-              </span>
+          {evidenceRequired && (
+            <div className="flex items-center justify-between text-xs text-[#524D6B] dark:text-brand-200 pt-1">
+              <label htmlFor="task-min-evidence">Minimum photos required:</label>
               <input
-                type="checkbox"
-                checked={evidenceRequired}
-                onChange={(e) => setEvidenceRequired(e.target.checked)}
-                className="w-4 h-4 text-blue-600 rounded"
+                id="task-min-evidence"
+                type="number"
+                min={1}
+                max={10}
+                value={minEvidenceCount}
+                onChange={(e) => setMinEvidenceCount(Number(e.target.value))}
+                className="w-16 px-2.5 py-1.5 text-xs border border-brand-200 dark:border-brand-700 rounded-lg bg-white dark:bg-[#18132B] text-[#1A162E] dark:text-white"
               />
             </div>
+          )}
+        </div>
 
-            {evidenceRequired && (
-              <div className="flex items-center justify-between text-xs text-slate-500 pt-1">
-                <span>Minimum photos required:</span>
-                <input
-                  type="number"
-                  min={1}
-                  max={10}
-                  value={minEvidenceCount}
-                  onChange={(e) => setMinEvidenceCount(Number(e.target.value))}
-                  className="w-16 px-2 py-1 text-xs border rounded-lg bg-white dark:bg-slate-800"
-                />
-              </div>
-            )}
-          </div>
-
-          <div className="pt-2 flex justify-end space-x-2">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-xl"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={isSubmitting}
-              className="px-5 py-2 bg-blue-600 text-white text-xs font-bold rounded-xl shadow-md disabled:opacity-60"
-            >
-              {isSubmitting ? 'Creating...' : parentTask ? 'Add Microtask' : 'Assign Outcome'}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
+        <div className="pt-3 flex justify-end space-x-2.5 border-t border-brand-100 dark:border-brand-800/60">
+          <button
+            type="button"
+            onClick={onClose}
+            className="px-4 py-2.5 min-h-[44px] text-xs font-bold text-[#2B244D] dark:text-brand-100 hover:bg-brand-50 dark:hover:bg-brand-900 rounded-xl transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            disabled={isSubmitting}
+            className="px-6 py-2.5 min-h-[44px] bg-brand-600 hover:bg-brand-700 active:scale-[0.98] text-white text-xs font-bold rounded-xl shadow-md shadow-brand-600/20 disabled:opacity-60 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
+          >
+            {isSubmitting ? 'Creating...' : parentTask ? 'Add Microtask' : 'Assign Outcome'}
+          </button>
+        </div>
+      </form>
+    </Modal>
   );
 };
 

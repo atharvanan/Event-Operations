@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Bell, Check, ShieldAlert, AlertTriangle, Image as ImageIcon, Flame, CheckCircle } from 'lucide-react';
+import { Bell, AlertTriangle, Image as ImageIcon, Flame, CheckCircle, Info } from 'lucide-react';
 import { api } from '../../lib/api';
 import { INotification } from '@shared/types';
 import { useSocket } from '../../hooks/useSocket';
@@ -23,6 +23,7 @@ export function NotificationBell() {
   const [isOpen, setIsOpen] = useState<boolean>(false);
   const [pushStatus, setPushStatus] = useState<'prompt' | 'granted' | 'denied' | 'unsupported'>('prompt');
   const [isSubscribing, setIsSubscribing] = useState<boolean>(false);
+  const [pushMessage, setPushMessage] = useState<string>('');
   const dropdownRef = useRef<HTMLDivElement>(null);
   const { socket } = useSocket();
 
@@ -33,8 +34,8 @@ export function NotificationBell() {
         setNotifications(res.data.data.notifications);
         setUnreadCount(res.data.data.unreadCount);
       }
-    } catch (err) {
-      // Gracefully ignore error if unauthenticated
+    } catch {
+      // Ignore if unauthenticated or offline
     }
   };
 
@@ -53,14 +54,23 @@ export function NotificationBell() {
       setPushStatus('unsupported');
     }
 
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isOpen) {
+        setIsOpen(false);
+      }
+    };
     const handleClickOutside = (e: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
         setIsOpen(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isOpen]);
 
   useEffect(() => {
     if (!socket) return;
@@ -77,23 +87,23 @@ export function NotificationBell() {
 
   const handleSubscribePush = async () => {
     if (typeof window === 'undefined' || !('serviceWorker' in navigator) || !('PushManager' in window)) {
-      alert('Push notifications are not supported in this browser environment.');
+      setPushStatus('unsupported');
+      setPushMessage('Push alerts are unavailable in this browser. In-app alerts continue working normally.');
       return;
     }
 
     try {
       setIsSubscribing(true);
+      setPushMessage('');
       const perm = await Notification.requestPermission();
       if (perm !== 'granted') {
         setPushStatus('denied');
         return;
       }
 
-      // 1. Get VAPID public key from backend
       const keyRes = await api.get('/notifications/vapid-key');
       const publicKey = keyRes.data?.data?.publicKey;
-
-      if (!publicKey) throw new Error('No VAPID public key received from server');
+      if (!publicKey) throw new Error('No VAPID key configured');
 
       const registration = await navigator.serviceWorker.ready;
       const sub = await registration.pushManager.subscribe({
@@ -101,7 +111,6 @@ export function NotificationBell() {
         applicationServerKey: urlBase64ToUint8Array(publicKey),
       });
 
-      // 2. Register subscription on backend
       const p256dh = btoa(String.fromCharCode.apply(null, Array.from(new Uint8Array(sub.getKey('p256dh')!))));
       const auth = btoa(String.fromCharCode.apply(null, Array.from(new Uint8Array(sub.getKey('auth')!))));
 
@@ -111,8 +120,9 @@ export function NotificationBell() {
       });
 
       setPushStatus('granted');
-    } catch (error) {
-      console.error('Failed to subscribe to push notifications:', error);
+      setPushMessage('Device alerts enabled.');
+    } catch {
+      setPushMessage('Could not register device push right now. In-app alerts remain active.');
     } finally {
       setIsSubscribing(false);
     }
@@ -123,33 +133,31 @@ export function NotificationBell() {
       await api.patch('/notifications/all/read');
       setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
       setUnreadCount(0);
-    } catch (err) {
-      console.error('Failed to mark all as read', err);
+    } catch {
+      // ignore offline
     }
   };
 
   const handleMarkOneRead = async (id: string) => {
     try {
       await api.patch(`/notifications/${id}/read`);
-      setNotifications((prev) =>
-        prev.map((n) => (n._id === id ? { ...n, isRead: true } : n))
-      );
+      setNotifications((prev) => prev.map((n) => (n._id === id ? { ...n, isRead: true } : n)));
       setUnreadCount((prev) => Math.max(0, prev - 1));
-    } catch (err) {
-      console.error('Failed to mark read', err);
+    } catch {
+      // ignore offline
     }
   };
 
   const getIconForType = (type: string) => {
     switch (type) {
       case 'BLOCKER_RAISED':
-        return <AlertTriangle className="w-4 h-4 text-red-500" />;
+        return <AlertTriangle className="w-4 h-4 text-red-600" />;
       case 'REWORK_REQUIRED':
-        return <Flame className="w-4 h-4 text-amber-500" />;
+        return <Flame className="w-4 h-4 text-amber-700" />;
       case 'PROOF_UPLOADED':
-        return <ImageIcon className="w-4 h-4 text-blue-500" />;
+        return <ImageIcon className="w-4 h-4 text-brand-600" />;
       default:
-        return <CheckCircle className="w-4 h-4 text-emerald-500" />;
+        return <CheckCircle className="w-4 h-4 text-emerald-700" />;
     }
   };
 
@@ -158,83 +166,103 @@ export function NotificationBell() {
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className="relative p-2 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition"
-        aria-label="Notifications"
+        aria-haspopup="dialog"
+        aria-expanded={isOpen}
+        aria-label={unreadCount > 0 ? `Notifications (${unreadCount} unread)` : 'Notifications'}
+        className="relative w-11 h-11 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-full bg-white dark:bg-[#18132B] border border-brand-200 dark:border-brand-700/60 text-[#2B244D] dark:text-brand-100 hover:bg-brand-50 dark:hover:bg-brand-900 shadow-soft transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600"
       >
-        <Bell className="w-5 h-5" />
+        <Bell className="w-5 h-5" aria-hidden="true" />
         {unreadCount > 0 && (
-          <span className="absolute top-1 right-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-600 text-[10px] font-black text-white">
+          <span className="absolute -top-0.5 -right-0.5 flex h-5 min-w-[20px] px-1 items-center justify-center rounded-full bg-red-600 text-xs font-extrabold text-white">
             {unreadCount > 9 ? '9+' : unreadCount}
           </span>
         )}
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 mt-2 w-80 sm:w-96 rounded-2xl bg-white dark:bg-slate-900 shadow-xl border border-slate-200 dark:border-slate-800 py-3 z-50">
-          <div className="px-4 pb-2 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
-            <h4 className="text-xs font-black uppercase tracking-wider text-slate-900 dark:text-white">
-              Operations Alerts
-            </h4>
+        <div
+          role="dialog"
+          aria-label="Event notifications"
+          className="absolute right-0 mt-2 w-80 sm:w-96 rounded-2xl bg-white dark:bg-[#18132B] shadow-card border border-brand-200 dark:border-brand-700/60 py-3 z-50"
+        >
+          <div className="px-4 pb-2.5 border-b border-brand-100 dark:border-brand-800/60 flex items-center justify-between">
+            <h3 className="text-sm font-bold text-[#1A162E] dark:text-white">Notifications</h3>
             {unreadCount > 0 && (
               <button
                 type="button"
                 onClick={handleMarkAllRead}
-                className="text-[11px] font-bold text-blue-600 hover:underline"
+                className="text-xs font-bold text-brand-600 dark:text-brand-300 hover:underline min-h-[36px] px-2 rounded-lg"
               >
                 Mark all read
               </button>
             )}
           </div>
 
-          {/* Web Push Prompt Bar if not subscribed */}
           {pushStatus === 'prompt' && (
-            <div className="mx-3 my-2 p-2.5 rounded-xl bg-blue-50 dark:bg-blue-950/60 border border-blue-200 dark:border-blue-900 flex items-center justify-between">
-              <span className="text-[11px] font-bold text-blue-800 dark:text-blue-200">
-                Enable instant phone push alerts
-              </span>
+            <div className="mx-3 my-2.5 p-3 rounded-xl bg-brand-50 dark:bg-brand-900/50 border border-brand-200 dark:border-brand-700/60 space-y-2">
+              <div className="flex items-start gap-2">
+                <Info className="w-4 h-4 text-brand-600 dark:text-brand-300 shrink-0 mt-0.5" aria-hidden="true" />
+                <p className="text-xs text-[#2B244D] dark:text-brand-100">
+                  Enable push alerts to hear immediately about urgent task updates and blockers.
+                </p>
+              </div>
               <button
                 type="button"
                 onClick={handleSubscribePush}
                 disabled={isSubscribing}
-                className="px-2.5 py-1 bg-blue-600 text-white rounded-lg text-[10px] font-black hover:bg-blue-700 transition"
+                className="w-full min-h-[44px] px-3 py-2 bg-brand-600 text-white rounded-xl text-xs font-bold hover:bg-brand-700 transition"
               >
-                {isSubscribing ? 'Enabling...' : 'Enable'}
+                {isSubscribing ? 'Enabling Alerts...' : 'Turn On Push Alerts'}
               </button>
             </div>
           )}
 
-          <div className="max-h-80 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800">
+          {pushStatus === 'denied' && (
+            <div className="mx-3 my-2.5 p-3 rounded-xl bg-amber-50 dark:bg-amber-950/60 border border-amber-300 dark:border-amber-800 text-xs text-amber-950 dark:text-amber-100">
+              <p className="font-bold">Push notifications are blocked</p>
+              <p className="mt-1 leading-relaxed">
+                To re-enable alerts, open your browser&apos;s site lock icon in the address bar and allow Notifications. Updates still appear here live.
+              </p>
+            </div>
+          )}
+
+          {pushMessage && (
+            <div role="status" className="mx-3 mb-2 text-xs font-semibold text-brand-700 dark:text-brand-200 px-2">
+              {pushMessage}
+            </div>
+          )}
+
+          <div className="max-h-80 overflow-y-auto divide-y divide-brand-100/70 dark:divide-brand-800/50">
             {notifications.length === 0 ? (
-              <div className="p-6 text-center text-xs text-slate-400 font-medium">
-                No active notifications
+              <div className="p-6 text-center text-xs text-[#524D6B] dark:text-brand-200 font-medium">
+                You&apos;re all caught up. No new notifications.
               </div>
             ) : (
-              notifications.map((n) => (
-                <div
+              notifications.map((n: any) => (
+                <button
                   key={n._id}
+                  type="button"
                   onClick={() => !n.isRead && handleMarkOneRead(n._id)}
-                  className={`p-3.5 flex items-start space-x-3 cursor-pointer transition hover:bg-slate-50 dark:hover:bg-slate-800/60 ${
-                    !n.isRead ? 'bg-blue-50/40 dark:bg-blue-950/20' : ''
+                  className={`w-full text-left p-3.5 min-h-[52px] flex items-start space-x-3 transition hover:bg-brand-50 dark:hover:bg-brand-900/40 ${
+                    !n.isRead ? 'bg-brand-50/70 dark:bg-brand-900/20' : ''
                   }`}
                 >
-                  <div className="p-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 shrink-0 mt-0.5">
+                  <div className="p-2 rounded-xl bg-brand-50 dark:bg-brand-800/60 shrink-0 mt-0.5" aria-hidden="true">
                     {getIconForType(n.type)}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-xs font-bold text-slate-900 dark:text-white truncate">
-                      {n.title}
+                    <p className="text-xs font-bold text-[#1A162E] dark:text-white">{n.title}</p>
+                    <p className="text-xs text-[#524D6B] dark:text-brand-200 mt-0.5 line-clamp-2">
+                      {n.message || n.body}
                     </p>
-                    <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 line-clamp-2">
-                      {n.message}
-                    </p>
-                    <span className="text-[10px] text-slate-400 mt-1 block">
+                    <span className="text-xs text-[#645E80] dark:text-brand-300 mt-1 block">
                       {new Date(n.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                     </span>
                   </div>
                   {!n.isRead && (
-                    <span className="w-2 h-2 rounded-full bg-blue-600 shrink-0 mt-1.5" />
+                    <span className="w-2.5 h-2.5 rounded-full bg-brand-600 shrink-0 mt-1.5" aria-label="Unread notification" />
                   )}
-                </div>
+                </button>
               ))
             )}
           </div>
@@ -243,4 +271,3 @@ export function NotificationBell() {
     </div>
   );
 }
-

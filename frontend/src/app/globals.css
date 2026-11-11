@@ -3,29 +3,117 @@
 @tailwind utilities;
 
 :root {
-  --foreground-rgb: 15, 23, 42;
-  --background-start-rgb: 248, 250, 252;
-  --background-end-rgb: 255, 255, 255;
+  --foreground-rgb: 26, 22, 46;
+  --muted-foreground-rgb: 82, 77, 107;
+  --background-start-rgb: 245, 244, 250;
+  --background-end-rgb: 248, 247, 252;
+  --surface-rgb: 255, 255, 255;
+  --tint-rgb: 239, 235, 249;
+  --sidebar-start: #221849;
+  --sidebar-end: #2F2063;
+  --primary-accent: #43328E;
+  --focus-ring-color: #43328E;
+  --card-border-color: rgba(196, 191, 224, 0.8);
+  --input-border-color: #8A84A8;
 }
 
 .dark {
-  --foreground-rgb: 241, 245, 249;
-  --background-start-rgb: 2, 6, 23;
-  --background-end-rgb: 15, 23, 42;
+  --foreground-rgb: 245, 244, 250;
+  --muted-foreground-rgb: 196, 191, 224;
+  --background-start-rgb: 14, 11, 26;
+  --background-end-rgb: 20, 16, 38;
+  --surface-rgb: 24, 19, 43;
+  --tint-rgb: 36, 28, 66;
+  --sidebar-start: #120D28;
+  --sidebar-end: #1E1642;
+  --primary-accent: #8B7AE6;
+  --focus-ring-color: #A798F2;
+  --card-border-color: rgba(114, 102, 166, 0.45);
+  --input-border-color: #7266A6;
+}
+
+/* High Contrast Mode */
+.high-contrast {
+  --foreground-rgb: 255, 255, 255;
+  --muted-foreground-rgb: 245, 245, 245;
+  --background-start-rgb: 0, 0, 0;
+  --background-end-rgb: 0, 0, 0;
+  --surface-rgb: 10, 10, 10;
+  --tint-rgb: 20, 20, 20;
+  --sidebar-start: #000000;
+  --sidebar-end: #000000;
+  --primary-accent: #FFE600;
+  --focus-ring-color: #facc15;
+  --card-border-color: #ffffff;
+  --input-border-color: #ffffff;
+}
+
+.high-contrast body {
+  background: #000000 !important;
+  color: #ffffff !important;
+}
+
+.high-contrast .bg-white,
+.high-contrast .bg-canvas,
+.high-contrast [class*="bg-[#18132B]"],
+.high-contrast [class*="bg-[#221A40]"],
+.high-contrast .dark\:bg-slate-900,
+.high-contrast .dark\:bg-slate-950 {
+  background-color: #0a0a0a !important;
+  border-color: #ffffff !important;
+  color: #ffffff !important;
+}
+
+.high-contrast input,
+.high-contrast textarea,
+.high-contrast select {
+  background-color: #000000 !important;
+  color: #ffffff !important;
+  border: 2px solid #ffffff !important;
+}
+
+.high-contrast button {
+  border: 2px solid #ffffff !important;
+}
+
+html.scale-large {
+  font-size: 112.5%;
+}
+
+html.scale-xlarge {
+  font-size: 125%;
 }
 
 body {
   color: rgb(var(--foreground-rgb));
-  background: linear-gradient(
+  background:
+    radial-gradient(circle at 92% 6%, rgba(167, 152, 242, 0.14), transparent 36%),
+    radial-gradient(circle at 8% 92%, rgba(167, 152, 242, 0.10), transparent 40%),
+    linear-gradient(
       to bottom,
-      transparent,
+      rgb(var(--background-start-rgb)),
       rgb(var(--background-end-rgb))
-    )
-    rgb(var(--background-start-rgb));
+    );
   min-height: 100vh;
+  min-height: 100dvh;
   -webkit-tap-highlight-color: transparent;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
+}
+
+.dark body {
+  background:
+    radial-gradient(circle at 92% 6%, rgba(103, 82, 184, 0.18), transparent 38%),
+    linear-gradient(
+      to bottom,
+      rgb(var(--background-start-rgb)),
+      rgb(var(--background-end-rgb))
+    );
+}
+
+.high-contrast body {
+  background: #000000 !important;
+  color: #ffffff !important;
 }
 
 /* Devanagari font optimizations for English, Hindi, and Marathi */
@@ -34,36 +122,65 @@ body, input, button, textarea, select {
   line-height: 1.5;
 }
 
-/* Custom scrollbars */
+/* Consistent, High-Contrast Visible Focus Indicators (WCAG 2.2 SC 2.4.7) */
+*:focus-visible {
+  outline: 2px solid var(--focus-ring-color) !important;
+  outline-offset: 2px !important;
+}
+
+.high-contrast *:focus-visible {
+  outline: 3px solid #facc15 !important;
+  outline-offset: 3px !important;
+}
+
+/* Mobile Safe Areas (Notches, Dynamic Island & Gesture Bars) */
+.safe-area-top {
+  padding-top: max(env(safe-area-inset-top, 0px), 0.75rem);
+}
+
+.safe-area-bottom {
+  padding-bottom: max(env(safe-area-inset-bottom, 0px), 0.5rem);
+}
+
+.safe-area-pb-nav {
+  padding-bottom: calc(4.5rem + env(safe-area-inset-bottom, 0px));
+}
+
+/* Custom scrollbars with >= 3:1 WCAG contrast */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 8px;
+  height: 8px;
 }
 ::-webkit-scrollbar-track {
-  background: transparent;
+  background: rgba(15, 23, 42, 0.05);
+}
+.dark ::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
 }
 ::-webkit-scrollbar-thumb {
-  background: rgba(148, 163, 184, 0.35);
+  background: rgba(100, 116, 139, 0.7);
   border-radius: 9999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(100, 116, 139, 0.6);
+  background: rgba(71, 85, 105, 0.9);
 }
 
 /* Glassmorphism utility classes */
 .glass-panel {
-  background: rgba(255, 255, 255, 0.85);
+  background: rgba(255, 255, 255, 0.88);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
 }
 
 .dark .glass-panel {
-  background: rgba(15, 23, 42, 0.85);
+  background: rgba(15, 23, 42, 0.88);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
 }
 
-/* Pulsing badge indicators */
+/* Pulsing badge indicators with reduced-motion support */
 @keyframes softPulse {
   0%, 100% {
     opacity: 1;
@@ -79,12 +196,36 @@ body, input, button, textarea, select {
   animation: softPulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
 
+/* Respect both OS and in-app Reduced Motion preference (WCAG 2.2 SC 2.2.2) */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+  .pulse-badge {
+    animation: none !important;
+  }
+}
+
+html.reduced-motion *,
+html.reduced-motion *::before,
+html.reduced-motion *::after {
+  animation-duration: 0.001ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.001ms !important;
+  scroll-behavior: auto !important;
+}
+
 /* Smooth card transitions */
 .interactive-card {
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .interactive-card:hover {
   transform: translateY(-2px);
-  box-shadow: 0 12px 24px -10px rgba(15, 23, 42, 0.08);
+  box-shadow: 0 12px 24px -10px rgba(15, 23, 42, 0.1);
 }

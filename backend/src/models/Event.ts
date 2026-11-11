@@ -5,6 +5,10 @@ export interface IEventDoc extends Document {
   name: string;
   type: string;
   venue: string;
+  address?: string;
+  locationDetails?: string;
+  eventMode: 'in_person' | 'hybrid' | 'virtual';
+  coverImage?: string;
   timezone: string;
   zones: string[];
   managerId: mongoose.Types.ObjectId;
@@ -19,6 +23,13 @@ export interface IEventDoc extends Document {
     allowLeadTaskCreation: boolean;
     allowWorkerSelfAssignment: boolean;
   };
+  registrationConfig: {
+    enabled: boolean;
+    capacity: number;
+    requireApproval: boolean;
+    checkInOpen: boolean;
+    requirements: string[];
+  };
   createdAt: Date;
   updatedAt: Date;
 }
@@ -29,6 +40,14 @@ const eventSchema = new Schema<IEventDoc>(
     name: { type: String, required: true, trim: true },
     type: { type: String, default: 'wedding', trim: true },
     venue: { type: String, required: true, trim: true },
+    address: { type: String, trim: true, default: '' },
+    locationDetails: { type: String, trim: true, default: '' },
+    eventMode: {
+      type: String,
+      enum: ['in_person', 'hybrid', 'virtual'],
+      default: 'in_person',
+    },
+    coverImage: { type: String, trim: true },
     timezone: { type: String, default: 'Asia/Kolkata' },
     zones: [{ type: String, trim: true }],
     managerId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
@@ -46,6 +65,13 @@ const eventSchema = new Schema<IEventDoc>(
       requireLeadReviewFirst: { type: Boolean, default: true },
       allowLeadTaskCreation: { type: Boolean, default: true },
       allowWorkerSelfAssignment: { type: Boolean, default: false },
+    },
+    registrationConfig: {
+      enabled: { type: Boolean, default: true },
+      capacity: { type: Number, default: 500 },
+      requireApproval: { type: Boolean, default: false },
+      checkInOpen: { type: Boolean, default: true },
+      requirements: [{ type: String, trim: true }],
     },
   },
   {

@@ -170,7 +170,7 @@ export const VoiceRecorder: React.FC<VoiceRecorderProps> = ({
           <button
             type="button"
             onClick={onCancel}
-            className="px-2.5 py-1 bg-slate-800 text-white rounded-lg text-[11px]"
+            className="px-3 py-1.5 min-h-[36px] bg-slate-800 text-white rounded-lg text-xs"
           >
             Close
           </button>
@@ -181,14 +181,15 @@ export const VoiceRecorder: React.FC<VoiceRecorderProps> = ({
           <div className="flex items-center space-x-2.5 px-2">
             <div className="w-3 h-3 rounded-full bg-red-500 animate-ping" />
             <span className="font-mono text-xs font-bold">{formatTimer(duration)}</span>
-            <span className="text-[11px] text-slate-400">Recording voice note...</span>
+            <span className="text-xs text-slate-300">Recording voice note...</span>
           </div>
 
           <div className="flex items-center space-x-2">
             <button
               type="button"
               onClick={togglePause}
-              className="p-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-xs"
+              aria-label={isPaused ? 'Resume recording' : 'Pause recording'}
+              className="p-2 min-w-[36px] min-h-[36px] flex items-center justify-center bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg text-xs"
               title={isPaused ? 'Resume' : 'Pause'}
             >
               {isPaused ? <Play className="w-4 h-4" /> : <Pause className="w-4 h-4" />}
@@ -197,7 +198,8 @@ export const VoiceRecorder: React.FC<VoiceRecorderProps> = ({
             <button
               type="button"
               onClick={onCancel}
-              className="p-1.5 bg-slate-800 hover:bg-red-950 text-slate-400 hover:text-red-400 rounded-lg text-xs"
+              aria-label="Cancel recording"
+              className="p-2 min-w-[36px] min-h-[36px] flex items-center justify-center bg-slate-800 hover:bg-red-950 text-slate-300 hover:text-red-400 rounded-lg text-xs"
               title="Cancel"
             >
               <Trash2 className="w-4 h-4" />
@@ -206,7 +208,7 @@ export const VoiceRecorder: React.FC<VoiceRecorderProps> = ({
             <button
               type="button"
               onClick={stopRecording}
-              className="px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white text-xs font-bold rounded-lg shadow-sm flex items-center space-x-1"
+              className="px-3 py-1.5 min-h-[36px] bg-red-600 hover:bg-red-700 text-white text-xs font-bold rounded-lg shadow-sm flex items-center space-x-1"
             >
               <Square className="w-3.5 h-3.5 fill-current" />
               <span>Done</span>
@@ -218,14 +220,15 @@ export const VoiceRecorder: React.FC<VoiceRecorderProps> = ({
         <div className="flex items-center justify-between w-full px-2">
           <div className="flex items-center space-x-2">
             <audio src={previewAudioUrl || ''} controls className="h-8 max-w-[200px]" />
-            <span className="text-xs text-slate-400">{formatTimer(duration)}</span>
+            <span className="text-xs text-slate-300">{formatTimer(duration)}</span>
           </div>
 
           <div className="flex items-center space-x-2">
             <button
               type="button"
               onClick={onCancel}
-              className="p-1.5 bg-slate-800 hover:bg-red-950 text-slate-400 hover:text-red-400 rounded-lg"
+              aria-label="Discard voice note"
+              className="p-2 min-w-[36px] min-h-[36px] flex items-center justify-center bg-slate-800 hover:bg-red-950 text-slate-300 hover:text-red-400 rounded-lg"
               title="Discard"
             >
               <Trash2 className="w-4 h-4" />
@@ -235,7 +238,7 @@ export const VoiceRecorder: React.FC<VoiceRecorderProps> = ({
               type="button"
               disabled={isUploading}
               onClick={handleSend}
-              className="px-4 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl shadow-md flex items-center space-x-1.5 disabled:opacity-50"
+              className="px-4 py-1.5 min-h-[36px] bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold rounded-xl shadow-md flex items-center space-x-1.5 disabled:opacity-50"
             >
               {isUploading ? (
                 <>

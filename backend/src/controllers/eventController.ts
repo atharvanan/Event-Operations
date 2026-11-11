@@ -7,6 +7,7 @@ import { Team } from '../models/Team.js';
 import { Task } from '../models/Task.js';
 import { TaskActivity } from '../models/TaskActivity.js';
 import { User } from '../models/User.js';
+import { Attendee } from '../models/Attendee.js';
 import { Organization } from '../models/Organization.js';
 import { OrganizationMembership } from '../models/OrganizationMembership.js';
 import { EventRole, OrgRole, ConversationType, TaskStatus } from '../constants/index.js';
@@ -14,7 +15,22 @@ import { AuthenticatedRequest } from '../middlewares/auth.js';
 
 export const createEvent = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
-    const { orgId, name, type, venue, timezone, zones, startDate, endDate, description } = req.body;
+    const {
+      orgId,
+      name,
+      type,
+      venue,
+      address,
+      locationDetails,
+      eventMode,
+      coverImage,
+      registrationConfig,
+      timezone,
+      zones,
+      startDate,
+      endDate,
+      description,
+    } = req.body;
 
     if (!name || !venue || !startDate || !endDate) {
       res.status(400).json({
@@ -78,6 +94,10 @@ export const createEvent = async (req: AuthenticatedRequest, res: Response): Pro
       name,
       type: type || 'wedding',
       venue,
+      address: address || '',
+      locationDetails: locationDetails || '',
+      eventMode: ['in_person', 'hybrid', 'virtual'].includes(eventMode) ? eventMode : 'in_person',
+      coverImage: coverImage || undefined,
       timezone: timezone || 'Asia/Kolkata',
       zones: zones && zones.length > 0 ? zones : ['Main Stage', 'Entrance & Reception', 'Dining Area', 'Guest Lounge'],
       managerId: req.user!._id,
@@ -85,6 +105,15 @@ export const createEvent = async (req: AuthenticatedRequest, res: Response): Pro
       endDate: end,
       description: description || '',
       status: 'planning',
+      registrationConfig: registrationConfig
+        ? {
+            enabled: registrationConfig.enabled !== undefined ? Boolean(registrationConfig.enabled) : true,
+            capacity: Number(registrationConfig.capacity) > 0 ? Number(registrationConfig.capacity) : 500,
+            requireApproval: Boolean(registrationConfig.requireApproval),
+            checkInOpen: registrationConfig.checkInOpen !== undefined ? Boolean(registrationConfig.checkInOpen) : true,
+            requirements: Array.isArray(registrationConfig.requirements) ? registrationConfig.requirements : [],
+          }
+        : undefined,
     });
 
     // Add manager membership
@@ -121,9 +150,53 @@ export const getEvents = async (req: AuthenticatedRequest, res: Response): Promi
       $or: [{ _id: { $in: memberEventIds } }, { managerId: userId }],
     })
       .populate('managerId', 'name email phone avatarUrl')
-      .sort({ startDate: 1 });
+      .sort({ startDate: 1 })
+      .lean();
 
-    res.status(200).json({ success: true, data: events });
+    const eventIds = events.map((e) => e._id);
+    const [attendeeAgg, taskAgg] = await Promise.all([
+      Attendee.aggregate([
+        { $match: { eventId: { $in: eventIds }, status: { $ne: 'cancelled' } } },
+        {
+          $group: {
+            _id: '$eventId',
+            registeredCount: { $sum: 1 },
+            checkedInCount: {
+              $sum: { $cond: [{ $eq: ['$status', 'checked_in'] }, 1, 0] },
+            },
+          },
+        },
+      ]),
+      Task.aggregate([
+        { $match: { eventId: { $in: eventIds } } },
+        {
+          $group: {
+            _id: '$eventId',
+            totalTasksCount: { $sum: 1 },
+            completedTasksCount: {
+              $sum: { $cond: [{ $eq: ['$status', 'COMPLETED'] }, 1, 0] },
+            },
+          },
+        },
+      ]),
+    ]);
+
+    const attMap = new Map(attendeeAgg.map((a) => [a._id.toString(), a]));
+    const taskMap = new Map(taskAgg.map((t) => [t._id.toString(), t]));
+
+    const enrichedEvents = events.map((ev) => {
+      const att = attMap.get(ev._id.toString());
+      const tsk = taskMap.get(ev._id.toString());
+      return {
+        ...ev,
+        registeredCount: att?.registeredCount || 0,
+        checkedInCount: att?.checkedInCount || 0,
+        totalTasksCount: tsk?.totalTasksCount || 0,
+        completedTasksCount: tsk?.completedTasksCount || 0,
+      };
+    });
+
+    res.status(200).json({ success: true, data: enrichedEvents });
   } catch (error: any) {
     res.status(500).json({ success: false, message: error.message || 'Error fetching events.' });
   }
@@ -157,6 +230,11 @@ export const getEventById = async (req: AuthenticatedRequest, res: Response): Pr
       eventId: event._id,
       $or: [{ priority: 'CRITICAL' }, { priority: 'URGENT' }, { isUrgentEscalated: true }],
     });
+
+    const [registeredCount, checkedInCount] = await Promise.all([
+      Attendee.countDocuments({ eventId: event._id, status: { $ne: 'cancelled' } }),
+      Attendee.countDocuments({ eventId: event._id, status: 'checked_in' }),
+    ]);
 
     // Check user's role in this event
     const membership = await EventMembership.findOne({
@@ -193,6 +271,8 @@ export const getEventById = async (req: AuthenticatedRequest, res: Response): Pr
           completedTasks,
           blockedTasks,
           urgentTasks,
+          registeredCount,
+          checkedInCount,
           readinessPercentage: totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0,
         },
         userRole: effectiveRole,
@@ -207,7 +287,20 @@ export const getEventById = async (req: AuthenticatedRequest, res: Response): Pr
 export const updateEvent = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
     const { id } = req.params;
-    const { name, venue, zones, status, startDate, endDate, description } = req.body;
+    const {
+      name,
+      venue,
+      address,
+      locationDetails,
+      eventMode,
+      coverImage,
+      registrationConfig,
+      zones,
+      status,
+      startDate,
+      endDate,
+      description,
+    } = req.body;
 
     const event = await Event.findById(id);
     if (!event) {
@@ -217,6 +310,33 @@ export const updateEvent = async (req: AuthenticatedRequest, res: Response): Pro
 
     if (name) event.name = name;
     if (venue) event.venue = venue;
+    if (address !== undefined) event.address = address;
+    if (locationDetails !== undefined) event.locationDetails = locationDetails;
+    if (eventMode && ['in_person', 'hybrid', 'virtual'].includes(eventMode)) event.eventMode = eventMode;
+    if (coverImage !== undefined) event.coverImage = coverImage;
+    if (registrationConfig) {
+      event.registrationConfig = {
+        enabled:
+          registrationConfig.enabled !== undefined
+            ? Boolean(registrationConfig.enabled)
+            : event.registrationConfig?.enabled ?? true,
+        capacity:
+          Number(registrationConfig.capacity) > 0
+            ? Number(registrationConfig.capacity)
+            : event.registrationConfig?.capacity ?? 500,
+        requireApproval:
+          registrationConfig.requireApproval !== undefined
+            ? Boolean(registrationConfig.requireApproval)
+            : event.registrationConfig?.requireApproval ?? false,
+        checkInOpen:
+          registrationConfig.checkInOpen !== undefined
+            ? Boolean(registrationConfig.checkInOpen)
+            : event.registrationConfig?.checkInOpen ?? true,
+        requirements: Array.isArray(registrationConfig.requirements)
+          ? registrationConfig.requirements
+          : event.registrationConfig?.requirements ?? [],
+      };
+    }
     if (zones) event.zones = zones;
     if (status) {
       if (status === 'archived') {
@@ -291,6 +411,94 @@ export const addEventMember = async (req: AuthenticatedRequest, res: Response): 
     res.status(200).json({ success: true, data: membership });
   } catch (error: any) {
     res.status(500).json({ success: false, message: error.message || 'Error assigning member.' });
+  }
+};
+
+export const inviteEventMember = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+  try {
+    const { id } = req.params;
+    const { email, name, role, teamId } = req.body;
+
+    if (!email || typeof email !== 'string') {
+      res.status(400).json({ success: false, message: 'Email address is required.' });
+      return;
+    }
+
+    const event = await Event.findById(id);
+    if (!event) {
+      res.status(404).json({ success: false, message: 'Event not found.' });
+      return;
+    }
+
+    const cleanEmail = email.trim().toLowerCase();
+    const targetRole = Object.values(EventRole).includes(role) ? role : EventRole.TEAM_MEMBER;
+
+    let invitedUser = await User.findOne({ email: cleanEmail });
+    if (!invitedUser) {
+      invitedUser = await User.create({
+        email: cleanEmail,
+        name: name?.trim() || cleanEmail.split('@')[0],
+        password: 'Password@123',
+        preferredLanguage: 'en',
+      });
+    }
+
+    await OrganizationMembership.findOneAndUpdate(
+      { orgId: event.orgId, userId: invitedUser._id },
+      { role: OrgRole.MEMBER, status: 'active' },
+      { upsert: true, new: true }
+    );
+
+    const membership = await EventMembership.findOneAndUpdate(
+      { eventId: event._id, userId: invitedUser._id },
+      {
+        role: targetRole,
+        ...(teamId ? { teamId: new mongoose.Types.ObjectId(teamId) } : {}),
+        status: 'active',
+      },
+      { upsert: true, new: true }
+    );
+
+    if (teamId) {
+      const team = await Team.findOne({ _id: teamId, eventId: event._id });
+      if (team) {
+        if (targetRole === EventRole.TEAM_LEAD) {
+          team.leadId = invitedUser._id;
+        } else {
+          await Team.updateOne(
+            { _id: team._id },
+            { $addToSet: { memberIds: invitedUser._id } }
+          );
+        }
+        await team.save();
+
+        await Conversation.updateMany(
+          { eventId: event._id, teamId: team._id },
+          { $addToSet: { participantIds: invitedUser._id } }
+        );
+      }
+    }
+
+    await Conversation.updateOne(
+      { eventId: event._id, type: ConversationType.GLOBAL_EVENT },
+      { $addToSet: { participantIds: invitedUser._id } }
+    );
+
+    res.status(201).json({
+      success: true,
+      data: {
+        membership,
+        user: {
+          _id: invitedUser._id,
+          name: invitedUser.name,
+          email: invitedUser.email,
+          avatarUrl: invitedUser.avatarUrl,
+        },
+      },
+      message: `${invitedUser.name} added to event roster.`,
+    });
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: error.message || 'Error inviting event team member.' });
   }
 };
 

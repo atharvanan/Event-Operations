@@ -1,84 +1,114 @@
-// Event Operations Platform - Progressive Web App Service Worker
-const CACHE_NAME = 'eventops-v1';
+// EventOps Progressive Web App Service Worker (v3)
+const CACHE_NAME = 'eventops-v3';
 const STATIC_ASSETS = [
   '/',
+  '/home',
+  '/offline.html',
   '/manifest.json',
   '/icons/icon-192x192.png',
   '/icons/icon-512x512.png',
+  '/icons/icon-maskable-192x192.png',
+  '/icons/icon-maskable-512x512.png',
+  '/icons/apple-touch-icon.png',
+  '/images/events/corporate.svg',
+  '/images/events/wedding.svg',
+  '/images/events/concert.svg',
+  '/images/events/exhibition.svg',
+  '/images/events/birthday.svg',
+  '/images/events/custom.svg',
   '/locales/en/common.json',
   '/locales/hi/common.json',
   '/locales/mr/common.json',
 ];
 
-// Install event: Pre-cache core application shell
 self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(STATIC_ASSETS).catch((err) => {
-        console.warn('Pre-caching some assets failed:', err);
-      });
-    })
+    caches.open(CACHE_NAME).then((cache) =>
+      cache.addAll(STATIC_ASSETS).catch((err) => {
+        console.warn('[SW] Some static assets could not be pre-cached:', err);
+      })
+    )
   );
-  self.skipWaiting();
 });
 
-// Activate event: Clean up old caches
+// Explicit activation only when user clicks Update or no active worker controls clients
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+  }
+});
+
 self.addEventListener('activate', (event) => {
   event.waitUntil(
-    caches.keys().then((keys) => {
-      return Promise.all(
+    caches.keys().then((keys) =>
+      Promise.all(
         keys.map((key) => {
           if (key !== CACHE_NAME) {
             return caches.delete(key);
           }
+          return Promise.resolve();
         })
-      );
-    })
+      )
+    )
   );
   self.clients.claim();
 });
 
-// Fetch event: Network-first for API, Cache-first for static assets
 self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
 
-  // Skip caching for API, socket, and external uploads
-  if (url.pathname.startsWith('/api/') || url.pathname.startsWith('/socket.io/') || event.request.method !== 'GET') {
+  // Never cache authenticated API payloads, WebSocket traffic, or private uploaded files
+  if (
+    url.pathname.startsWith('/api/') ||
+    url.pathname.startsWith('/socket.io/') ||
+    url.pathname.startsWith('/uploads/') ||
+    event.request.method !== 'GET'
+  ) {
     return;
   }
 
+  // Navigation requests: Network-first with offline fallback
+  if (event.request.mode === 'navigate') {
+    event.respondWith(
+      fetch(event.request)
+        .then((response) => {
+          if (response && response.status === 200 && response.type === 'basic') {
+            const clone = response.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
+          }
+          return response;
+        })
+        .catch(async () => {
+          const cached = await caches.match(event.request);
+          if (cached) return cached;
+          const offlineFallback = await caches.match('/offline.html');
+          return offlineFallback || Response.error();
+        })
+    );
+    return;
+  }
+
+  // Static app shell assets: Stale-while-revalidate / Network-first with cache fallback
   event.respondWith(
     fetch(event.request)
       .then((response) => {
-        // Clone and put in cache if valid
         if (response && response.status === 200 && response.type === 'basic') {
-          const resClone = response.clone();
-          caches.open(CACHE_NAME).then((cache) => {
-            cache.put(event.request, resClone);
-          });
+          const clone = response.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
         }
         return response;
       })
-      .catch(() => {
-        // Fallback to cache when offline
-        return caches.match(event.request).then((cachedResponse) => {
-          if (cachedResponse) return cachedResponse;
-          if (event.request.mode === 'navigate') {
-            return caches.match('/');
-          }
-        });
-      })
+      .catch(() => caches.match(event.request))
   );
 });
 
-// Push notification event
 self.addEventListener('push', (event) => {
-  let data = { title: 'Event Operations Alert', body: 'New operational update received.' };
+  let data = { title: 'EventOps Alert', body: 'New operational update received.' };
   if (event.data) {
     try {
       data = event.data.json();
-    } catch (e) {
-      data = { title: 'Event Operations Alert', body: event.data.text() };
+    } catch {
+      data = { title: 'EventOps Alert', body: event.data.text() };
     }
   }
 
@@ -89,7 +119,7 @@ self.addEventListener('push', (event) => {
     vibrate: [200, 100, 200],
     data: data.data || {},
     actions: [
-      { action: 'open', title: 'Open Task' },
+      { action: 'open', title: 'Open Workspace' },
       { action: 'close', title: 'Dismiss' },
     ],
   };
@@ -97,19 +127,17 @@ self.addEventListener('push', (event) => {
   event.waitUntil(self.registration.showNotification(data.title, options));
 });
 
-// Notification click event
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
-
   if (event.action === 'close') return;
 
-  const targetUrl = event.notification.data?.url || '/';
+  const eventId = event.notification.data?.eventId;
+  const targetUrl = eventId ? `/events/${eventId}` : '/home';
 
   event.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true }).then((windowClients) => {
-      for (let client of windowClients) {
-        if (client.url.includes(self.origin) && 'focus' in client) {
-          client.navigate(targetUrl);
+      for (const client of windowClients) {
+        if (client.url.includes(targetUrl) && 'focus' in client) {
           return client.focus();
         }
       }
@@ -119,4 +147,3 @@ self.addEventListener('notificationclick', (event) => {
     })
   );
 });
-

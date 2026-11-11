@@ -33,7 +33,53 @@ const allowedMimeTypes = [
   'image/webp',
   'video/mp4',
   'video/webm',
+  'application/pdf',
+  'text/plain',
+  'text/csv',
 ];
+
+const resourceUploadDir = path.resolve(__dirname, '../../uploads/resources');
+if (!fs.existsSync(resourceUploadDir)) {
+  fs.mkdirSync(resourceUploadDir, { recursive: true });
+}
+
+const resourceStorage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, resourceUploadDir);
+  },
+  filename: (req, file, cb) => {
+    const ext = path.extname(file.originalname).toLowerCase();
+    const cleanBase = path
+      .basename(file.originalname, ext)
+      .replace(/[^a-zA-Z0-9]/g, '_')
+      .slice(0, 30);
+    const uniqueSuffix = `${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
+    cb(null, `${cleanBase}_${uniqueSuffix}${ext}`);
+  },
+});
+
+const allowedResourceMimeTypes = [
+  'image/jpeg',
+  'image/png',
+  'image/webp',
+  'application/pdf',
+  'text/plain',
+  'text/csv',
+];
+
+export const resourceUpload = multer({
+  storage: resourceStorage,
+  limits: {
+    fileSize: 15 * 1024 * 1024,
+  },
+  fileFilter: (req, file, cb) => {
+    if (allowedResourceMimeTypes.includes(file.mimetype)) {
+      cb(null, true);
+    } else {
+      cb(new Error(`Invalid resource file type ${file.mimetype}. Only JPEG, PNG, WebP, PDF, TXT, and CSV are permitted.`));
+    }
+  },
+});
 
 // Directory for chat voice notes and media
 const chatUploadDir = path.resolve(__dirname, '../../uploads/chat');
@@ -91,7 +137,7 @@ export const evidenceUpload = multer({
     if (allowedMimeTypes.includes(file.mimetype)) {
       cb(null, true);
     } else {
-      cb(new Error(`Invalid file type ${file.mimetype}. Only JPEG, PNG, WebP, MP4, and WebM are permitted.`));
+      cb(new Error(`Invalid file type ${file.mimetype}. Only JPEG, PNG, WebP, MP4, WebM, PDF, TXT, and CSV are permitted.`));
     }
   },
 });

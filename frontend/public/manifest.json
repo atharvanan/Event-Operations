@@ -1,24 +1,76 @@
 {
-  "name": "Event Operations & Team Coordination",
+  "name": "EventOps — Event Operations & Team Coordination",
   "short_name": "EventOps",
-  "description": "On-ground real-time event operations, microtask coordination, and evidence verification",
-  "start_url": "/",
+  "description": "Make event management effortless with real-time team coordination, checklists, proof verification, and contactless QR check-in.",
+  "start_url": "/home?mode=standalone",
+  "scope": "/",
   "display": "standalone",
-  "background_color": "#0f172a",
-  "theme_color": "#2563eb",
-  "orientation": "portrait-primary",
+  "background_color": "#F5F4FA",
+  "theme_color": "#221849",
+  "orientation": "any",
   "icons": [
     {
       "src": "/icons/icon-192x192.png",
       "sizes": "192x192",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-maskable-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
     },
     {
       "src": "/icons/icon-512x512.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-maskable-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Home Dashboard",
+      "short_name": "Home",
+      "description": "View upcoming events and quick actions",
+      "url": "/home",
+      "icons": [{ "src": "/icons/icon-192x192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Events",
+      "short_name": "Events",
+      "description": "Browse and manage active events",
+      "url": "/events",
+      "icons": [{ "src": "/icons/icon-192x192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Check-in Scanner",
+      "short_name": "Check-in",
+      "description": "Scan attendee QR passes at the venue entrance",
+      "url": "/check-in",
+      "icons": [{ "src": "/icons/icon-192x192.png", "sizes": "192x192" }]
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/screenshots/desktop-home.png",
+      "sizes": "1280x720",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "EventOps Desktop Home & Event Operations Workspace"
+    },
+    {
+      "src": "/screenshots/mobile-home.png",
+      "sizes": "390x844",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "EventOps Mobile PWA Home & QR Check-in"
     }
   ]
 }

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../contexts/AuthContext';
 import { api } from '../../lib/api';
@@ -55,6 +55,33 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
   const [actionLoading, setActionLoading] = useState(false);
   const [actionError, setActionError] = useState('');
 
+  const previouslyFocusedElementRef = useRef<HTMLElement | null>(null);
+  const dialogRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    previouslyFocusedElementRef.current = document.activeElement as HTMLElement;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        if (showReworkDialog) {
+          setShowReworkDialog(false);
+          return;
+        }
+        if (showBlockDialog) {
+          setShowBlockDialog(false);
+          return;
+        }
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      if (previouslyFocusedElementRef.current) {
+        previouslyFocusedElementRef.current.focus();
+      }
+    };
+  }, [onClose, showReworkDialog, showBlockDialog]);
+
   const fetchTaskDetails = async () => {
     try {
       setIsLoading(true);
@@ -82,7 +109,7 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
     return (
       <div className="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-sm flex items-center justify-center p-4">
         <div className="bg-white dark:bg-slate-900 rounded-2xl p-8 max-w-sm w-full flex flex-col items-center space-y-3">
-          <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
+          <div className="w-8 h-8 border-4 border-brand-600 border-t-transparent rounded-full animate-spin" />
           <span className="text-xs font-bold text-slate-500">Loading operational task...</span>
         </div>
       </div>
@@ -134,44 +161,65 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 max-w-2xl w-full flex flex-col max-h-[90vh] shadow-2xl animate-in fade-in zoom-in-95 duration-150">
+    <div
+      role="presentation"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+      className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 safe-area-bottom"
+    >
+      <div
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="task-detail-title"
+        className="bg-white dark:bg-[#18132B] rounded-3xl border border-brand-200/70 dark:border-brand-800/60 max-w-2xl w-full flex flex-col max-h-[90dvh] shadow-2xl animate-in fade-in zoom-in-95 duration-150 focus:outline-none"
+      >
         {/* Header */}
-        <div className="p-5 border-b border-slate-200 dark:border-slate-800 flex items-start justify-between">
+        <div className="p-5 sm:p-6 border-b border-brand-100 dark:border-brand-800/60 flex items-start justify-between">
           <div>
             <div className="flex items-center space-x-2 flex-wrap gap-y-1 mb-2">
-              <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
+              <span className="text-xs font-extrabold uppercase px-2 py-0.5 rounded bg-brand-50 text-brand-700 dark:bg-brand-950 dark:text-brand-200 border border-brand-200 dark:border-brand-800">
                 {t(`tasks.priority.${task.priority}`)}
               </span>
-              <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
+              <span className="text-xs font-bold px-2 py-0.5 rounded bg-brand-50/70 dark:bg-[#221C3E] text-[#2B244D] dark:text-brand-100">
                 {t(`tasks.status.${task.status}`)}
               </span>
               {task.zone && (
-                <span className="text-[10px] font-medium text-slate-500 flex items-center">
-                  <MapPin className="w-3 h-3 mr-1" />
+                <span className="text-xs font-medium text-[#524D6B] dark:text-brand-200 flex items-center">
+                  <MapPin className="w-3 h-3 mr-1" aria-hidden="true" />
                   {task.zone}
                 </span>
               )}
             </div>
-            <h2 className="text-base font-extrabold text-slate-900 dark:text-white leading-snug">
+            <h2 id="task-detail-title" className="text-base sm:text-lg font-extrabold text-[#1A162E] dark:text-white leading-snug">
               {task.title}
             </h2>
           </div>
 
-          <button type="button" onClick={onClose} className="text-slate-400 hover:text-slate-600 p-1">
-            <X className="w-5 h-5" />
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Close task details"
+            className="text-[#524D6B] hover:text-[#1A162E] dark:text-brand-200 dark:hover:text-white p-2 min-w-[44px] min-h-[44px] rounded-xl hover:bg-brand-50 dark:hover:bg-brand-900 transition flex items-center justify-center -mr-1 -mt-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
+          >
+            <X className="w-5 h-5" aria-hidden="true" />
           </button>
         </div>
 
         {/* Tab Bar */}
-        <div className="flex border-b border-slate-200 dark:border-slate-800 px-5 text-xs font-bold">
+        <div role="tablist" aria-label="Task detail sections" className="flex border-b border-brand-100 dark:border-brand-800/60 px-5 text-xs font-bold overflow-x-auto">
           <button
             type="button"
+            role="tab"
+            id="tab-details"
+            aria-controls="panel-details"
+            aria-selected={activeTab === 'details'}
             onClick={() => setActiveTab('details')}
-            className={`py-3 mr-6 border-b-2 transition-all ${
+            className={`py-3 mr-6 border-b-2 transition-all min-h-[44px] flex items-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 ${
               activeTab === 'details'
-                ? 'border-blue-600 text-blue-600'
-                : 'border-transparent text-slate-500 hover:text-slate-800'
+                ? 'border-brand-600 text-brand-600 dark:text-brand-300 font-extrabold'
+                : 'border-transparent text-[#524D6B] dark:text-brand-300 hover:text-[#1A162E] dark:hover:text-white'
             }`}
           >
             Details & Verification
@@ -180,44 +228,56 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
           {!task.parentTaskId && (
             <button
               type="button"
+              role="tab"
+              id="tab-microtasks"
+              aria-controls="panel-microtasks"
+              aria-selected={activeTab === 'microtasks'}
               onClick={() => setActiveTab('microtasks')}
-              className={`py-3 mr-6 border-b-2 transition-all flex items-center space-x-1.5 ${
+              className={`py-3 mr-6 border-b-2 transition-all min-h-[44px] flex items-center space-x-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 ${
                 activeTab === 'microtasks'
-                  ? 'border-blue-600 text-blue-600'
-                  : 'border-transparent text-slate-500 hover:text-slate-800'
+                  ? 'border-brand-600 text-brand-600 dark:text-brand-300 font-extrabold'
+                  : 'border-transparent text-[#524D6B] dark:text-brand-300 hover:text-[#1A162E] dark:hover:text-white'
               }`}
             >
-              <Layers className="w-3.5 h-3.5" />
+              <Layers className="w-3.5 h-3.5" aria-hidden="true" />
               <span>Microtasks ({microtasks.length})</span>
             </button>
           )}
 
           <button
             type="button"
+            role="tab"
+            id="tab-history"
+            aria-controls="panel-history"
+            aria-selected={activeTab === 'history'}
             onClick={() => setActiveTab('history')}
-            className={`py-3 border-b-2 transition-all flex items-center space-x-1.5 ${
+            className={`py-3 border-b-2 transition-all min-h-[44px] flex items-center space-x-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 ${
               activeTab === 'history'
-                ? 'border-blue-600 text-blue-600'
-                : 'border-transparent text-slate-500 hover:text-slate-800'
+                ? 'border-brand-600 text-brand-600 dark:text-brand-300 font-extrabold'
+                : 'border-transparent text-[#524D6B] dark:text-brand-300 hover:text-[#1A162E] dark:hover:text-white'
             }`}
           >
-            <History className="w-3.5 h-3.5" />
+            <History className="w-3.5 h-3.5" aria-hidden="true" />
             <span>Audit History ({activities.length})</span>
           </button>
         </div>
 
         {/* Action Error Banner */}
         {actionError && (
-          <div className="m-4 p-3 bg-red-50 text-red-600 text-xs rounded-xl border border-red-200 flex items-center space-x-2">
-            <AlertTriangle className="w-4 h-4 shrink-0" />
+          <div
+            role="alert"
+            aria-live="assertive"
+            className="m-4 p-3.5 bg-red-50 dark:bg-red-950/60 text-red-700 dark:text-red-300 text-xs font-semibold rounded-xl border border-red-300 dark:border-red-800 flex items-center space-x-2"
+          >
+            <AlertTriangle className="w-4 h-4 shrink-0" aria-hidden="true" />
             <span>{actionError}</span>
           </div>
         )}
 
         {/* Body Content */}
-        <div className="flex-1 overflow-y-auto p-5 space-y-5 text-sm">
+        <div className="flex-1 overflow-y-auto p-5 sm:p-6 space-y-5 text-sm">
           {activeTab === 'details' && (
-            <>
+            <div id="panel-details" role="tabpanel" aria-labelledby="tab-details" className="space-y-5 focus:outline-none">
               {/* Rework Alert if any */}
               {task.status === TaskStatus.REWORK_REQUIRED && task.reworkReason && (
                 <div className="p-3.5 bg-orange-50 dark:bg-orange-950/40 border border-orange-200 dark:border-orange-800 rounded-xl text-xs text-orange-800 dark:text-orange-200 space-y-1">
@@ -263,21 +323,21 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
               </div>
 
               {/* Evidence Requirement */}
-              <div className="p-3.5 bg-blue-50/50 dark:bg-blue-950/30 rounded-xl border border-blue-100 dark:border-blue-900 flex items-center justify-between">
+              <div className="p-3.5 bg-brand-50/60 dark:bg-[#221C3E] rounded-xl border border-brand-200/70 dark:border-brand-800/60 flex items-center justify-between">
                 <div className="flex items-center space-x-2">
-                  <Camera className="w-4 h-4 text-blue-600" />
+                  <Camera className="w-4 h-4 text-brand-600 dark:text-brand-300" />
                   <div>
-                    <h5 className="font-bold text-xs text-slate-900 dark:text-white">
+                    <h5 className="font-bold text-xs text-[#1A162E] dark:text-white">
                       Proof of Work Policy
                     </h5>
-                    <p className="text-[11px] text-slate-500">
+                    <p className="text-xs text-[#524D6B] dark:text-brand-200">
                       {task.evidenceRequired
                         ? `Requires at least ${task.minEvidenceCount} photo/video item(s) before final approval.`
                         : 'No mandatory photo proof required.'}
                     </p>
                   </div>
                 </div>
-                <span className="text-xs font-bold text-blue-600">
+                <span className="text-xs font-bold text-brand-600 dark:text-brand-300">
                   {task.evidenceRequired ? 'Enforced' : 'Optional'}
                 </span>
               </div>
@@ -285,7 +345,7 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
               {/* Evidence Gallery & Uploader */}
               <div className="space-y-3 pt-2">
                 <div className="flex items-center justify-between">
-                  <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center space-x-1.5">
+                  <h4 className="text-xs font-bold text-[#524D6B] dark:text-brand-300 uppercase tracking-wider flex items-center space-x-1.5">
                     <Camera className="w-3.5 h-3.5" />
                     <span>Uploaded Proof ({evidenceList.length})</span>
                   </h4>
@@ -293,7 +353,7 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
                   <button
                     type="button"
                     onClick={() => setShowUploader(!showUploader)}
-                    className="inline-flex items-center space-x-1 px-3 py-1 bg-blue-50 dark:bg-blue-950/60 hover:bg-blue-100 text-blue-700 dark:text-blue-300 rounded-lg text-xs font-bold border border-blue-200 dark:border-blue-800 transition-colors"
+                    className="inline-flex items-center space-x-1 px-3 py-1.5 min-h-[36px] bg-brand-50 dark:bg-brand-950/60 hover:bg-brand-100 text-brand-700 dark:text-brand-200 rounded-lg text-xs font-bold border border-brand-200 dark:border-brand-800 transition-colors"
                   >
                     <Plus className="w-3.5 h-3.5" />
                     <span>{showUploader ? 'Close' : 'Attach Proof'}</span>
@@ -320,20 +380,20 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
                   }}
                 />
               </div>
-            </>
+            </div>
           )}
 
           {activeTab === 'microtasks' && (
-            <div className="space-y-3">
+            <div id="panel-microtasks" role="tabpanel" aria-labelledby="tab-microtasks" className="space-y-3 focus:outline-none">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-slate-500">
+                <span className="text-xs font-bold text-[#524D6B] dark:text-brand-200">
                   Breakdown microtasks assigned to team members
                 </span>
                 {onOpenCreateMicrotask && (
                   <button
                     type="button"
                     onClick={() => onOpenCreateMicrotask(task)}
-                    className="inline-flex items-center space-x-1.5 px-3 py-1.5 bg-blue-600 text-white rounded-lg text-xs font-bold shadow-sm"
+                    className="inline-flex items-center space-x-1.5 px-3 py-1.5 min-h-[36px] bg-brand-600 hover:bg-brand-700 text-white rounded-lg text-xs font-bold shadow-sm"
                   >
                     <Plus className="w-3.5 h-3.5" />
                     <span>Add Microtask</span>
@@ -342,22 +402,22 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
               </div>
 
               {microtasks.length === 0 ? (
-                <div className="text-center py-10 bg-slate-50 dark:bg-slate-800/40 rounded-xl border border-dashed border-slate-200 dark:border-slate-800">
-                  <Layers className="w-8 h-8 text-slate-400 mx-auto mb-2" />
-                  <p className="text-xs text-slate-500">No microtasks assigned yet.</p>
+                <div className="text-center py-10 bg-brand-50/40 dark:bg-[#221C3E]/50 rounded-xl border border-dashed border-brand-200 dark:border-brand-800">
+                  <Layers className="w-8 h-8 text-brand-400 mx-auto mb-2" />
+                  <p className="text-xs text-[#524D6B] dark:text-brand-200">No microtasks assigned yet.</p>
                 </div>
               ) : (
                 <div className="space-y-2">
                   {microtasks.map((micro) => (
                     <div
                       key={micro._id}
-                      className="p-3 bg-slate-50 dark:bg-slate-800/40 rounded-xl border border-slate-200 dark:border-slate-800 flex items-center justify-between"
+                      className="p-3 bg-brand-50/50 dark:bg-[#221C3E] rounded-xl border border-brand-200/70 dark:border-brand-800/60 flex items-center justify-between gap-2"
                     >
                       <div>
-                        <h5 className="text-xs font-bold text-slate-900 dark:text-white">
+                        <h5 className="text-xs font-bold text-[#1A162E] dark:text-white">
                           {micro.title}
                         </h5>
-                        <div className="flex items-center space-x-2 text-[11px] text-slate-500 mt-1">
+                        <div className="flex items-center space-x-2 text-xs text-[#524D6B] dark:text-brand-200 mt-1">
                           <span>Assignee: {micro.assignee ? micro.assignee.name : 'Unassigned'}</span>
                           <span>•</span>
                           <span>Due: {new Date(micro.dueTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
@@ -365,7 +425,7 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
                       </div>
 
                       <div className="flex items-center space-x-2">
-                        <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-white dark:bg-slate-700 border text-slate-700 dark:text-slate-300">
+                        <span className="text-xs font-bold px-2 py-0.5 rounded bg-white dark:bg-[#18132B] border border-brand-200/70 dark:border-brand-800 text-[#2B244D] dark:text-brand-100">
                           {t(`tasks.status.${micro.status}`)}
                         </span>
                         {/* Quick lead approval button for microtask */}
@@ -378,7 +438,7 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
                               });
                               fetchTaskDetails();
                             }}
-                            className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-bold rounded-lg shadow-sm"
+                            className="px-3 py-1.5 min-h-[36px] bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-lg shadow-sm"
                           >
                             Verify
                           </button>
@@ -392,23 +452,23 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
           )}
 
           {activeTab === 'history' && (
-            <div className="space-y-3">
-              <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">
+            <div id="panel-history" role="tabpanel" aria-labelledby="tab-history" className="space-y-3 focus:outline-none">
+              <h4 className="text-xs font-bold text-[#524D6B] dark:text-brand-300 uppercase tracking-wider mb-2">
                 Immutable Activity Trail
               </h4>
               {activities.length === 0 ? (
-                <p className="text-xs text-slate-500">No activity recorded yet.</p>
+                <p className="text-xs text-[#524D6B] dark:text-brand-200">No activity recorded yet.</p>
               ) : (
-                <div className="space-y-3 relative before:absolute before:inset-0 before:left-3 before:w-0.5 before:bg-slate-200 dark:before:bg-slate-800">
+                <div className="space-y-3 relative before:absolute before:inset-0 before:left-3 before:w-0.5 before:bg-brand-200 dark:before:bg-brand-800">
                   {activities.map((act) => (
                     <div key={act._id} className="relative flex items-start pl-7 text-xs">
-                      <div className="absolute left-1.5 top-1 w-3 h-3 rounded-full bg-blue-600 border-2 border-white dark:border-slate-900" />
+                      <div className="absolute left-1.5 top-1 w-3 h-3 rounded-full bg-brand-600 border-2 border-white dark:border-[#18132B]" />
                       <div>
                         <div className="flex items-center space-x-2">
-                          <span className="font-bold text-slate-900 dark:text-white">
+                          <span className="font-bold text-[#1A162E] dark:text-white">
                             {act.actor ? act.actor.name : 'System'}
                           </span>
-                          <span className="text-[10px] text-slate-400">
+                          <span className="text-xs text-[#524D6B] dark:text-brand-300">
                             {new Date(act.createdAt).toLocaleString([], {
                               month: 'short',
                               day: 'numeric',
@@ -417,13 +477,13 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
                             })}
                           </span>
                         </div>
-                        <p className="text-slate-600 dark:text-slate-300 mt-0.5 font-medium">
+                        <p className="text-[#2B244D] dark:text-brand-100 mt-0.5 font-medium">
                           {act.action}:{' '}
                           {act.previousValue ? `${act.previousValue} → ` : ''}
                           <span className="font-bold">{act.newValue}</span>
                         </p>
                         {act.reason && (
-                          <p className="text-[11px] text-orange-600 dark:text-orange-400 mt-0.5 italic">
+                          <p className="text-xs text-orange-700 dark:text-orange-300 mt-0.5 italic">
                             Reason: "{act.reason}"
                           </p>
                         )}
@@ -526,24 +586,28 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
 
         {/* Rework Reason Dialog */}
         {showReworkDialog && (
-          <div className="absolute inset-0 bg-slate-950/70 backdrop-blur-sm rounded-2xl flex items-center justify-center p-6 z-10">
-            <div className="bg-white dark:bg-slate-900 rounded-xl p-5 max-w-md w-full space-y-4 border border-slate-200 dark:border-slate-800">
-              <h4 className="font-bold text-sm text-slate-900 dark:text-white">
+          <div role="presentation" className="absolute inset-0 bg-slate-950/75 backdrop-blur-sm rounded-3xl flex items-center justify-center p-4 sm:p-6 z-10">
+            <div role="dialog" aria-modal="true" aria-labelledby="rework-dialog-title" className="bg-white dark:bg-[#18132B] rounded-2xl p-5 sm:p-6 max-w-md w-full space-y-4 border border-brand-200 dark:border-brand-800 shadow-2xl">
+              <h4 id="rework-dialog-title" className="font-bold text-sm text-[#1A162E] dark:text-white">
                 Specify Reason for Rework
               </h4>
+              <label htmlFor="rework-reason-input" className="sr-only">
+                Rework reason details
+              </label>
               <textarea
+                id="rework-reason-input"
                 required
                 rows={3}
                 value={reworkReason}
                 onChange={(e) => setReworkReason(e.target.value)}
                 placeholder="Clearly state what adjustments or extra proof are required..."
-                className="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800"
+                className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-brand-200 dark:border-brand-700 bg-white dark:bg-[#221C3E] text-[#1A162E] dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500"
               />
-              <div className="flex justify-end space-x-2">
+              <div className="flex justify-end space-x-2.5 pt-2 border-t border-brand-100 dark:border-brand-800">
                 <button
                   type="button"
                   onClick={() => setShowReworkDialog(false)}
-                  className="px-3 py-1.5 text-xs text-slate-500"
+                  className="px-4 py-2 min-h-[44px] text-xs font-bold text-[#2B244D] dark:text-brand-100 hover:bg-brand-50 dark:hover:bg-brand-900 rounded-xl"
                 >
                   Cancel
                 </button>
@@ -551,7 +615,7 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
                   type="button"
                   disabled={!reworkReason.trim() || actionLoading}
                   onClick={() => handleStatusTransition(TaskStatus.REWORK_REQUIRED, reworkReason)}
-                  className="px-4 py-1.5 bg-orange-600 text-white text-xs font-bold rounded-lg shadow-sm disabled:opacity-50"
+                  className="px-5 py-2 min-h-[44px] bg-orange-600 hover:bg-orange-700 text-white text-xs font-bold rounded-xl shadow-sm disabled:opacity-50"
                 >
                   Send Rework Request
                 </button>
@@ -562,24 +626,28 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
 
         {/* Blocked Reason Dialog */}
         {showBlockDialog && (
-          <div className="absolute inset-0 bg-slate-950/70 backdrop-blur-sm rounded-2xl flex items-center justify-center p-6 z-10">
-            <div className="bg-white dark:bg-slate-900 rounded-xl p-5 max-w-md w-full space-y-4 border border-slate-200 dark:border-slate-800">
-              <h4 className="font-bold text-sm text-slate-900 dark:text-white">
+          <div role="presentation" className="absolute inset-0 bg-slate-950/75 backdrop-blur-sm rounded-3xl flex items-center justify-center p-4 sm:p-6 z-10">
+            <div role="dialog" aria-modal="true" aria-labelledby="blocked-dialog-title" className="bg-white dark:bg-[#18132B] rounded-2xl p-5 sm:p-6 max-w-md w-full space-y-4 border border-brand-200 dark:border-brand-800 shadow-2xl">
+              <h4 id="blocked-dialog-title" className="font-bold text-sm text-[#1A162E] dark:text-white">
                 Report Issue / Blocked Reason
               </h4>
+              <label htmlFor="block-reason-input" className="sr-only">
+                Blocked reason details
+              </label>
               <textarea
+                id="block-reason-input"
                 required
                 rows={3}
                 value={blockReason}
                 onChange={(e) => setBlockReason(e.target.value)}
                 placeholder="Describe what is preventing progress (e.g. power failure, missing inventory)..."
-                className="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800"
+                className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-brand-200 dark:border-brand-700 bg-white dark:bg-[#221C3E] text-[#1A162E] dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500"
               />
-              <div className="flex justify-end space-x-2">
+              <div className="flex justify-end space-x-2.5 pt-2 border-t border-brand-100 dark:border-brand-800">
                 <button
                   type="button"
                   onClick={() => setShowBlockDialog(false)}
-                  className="px-3 py-1.5 text-xs text-slate-500"
+                  className="px-4 py-2 min-h-[44px] text-xs font-bold text-[#2B244D] dark:text-brand-100 hover:bg-brand-50 dark:hover:bg-brand-900 rounded-xl"
                 >
                   Cancel
                 </button>
@@ -587,7 +655,7 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
                   type="button"
                   disabled={!blockReason.trim() || actionLoading}
                   onClick={() => handleStatusTransition(TaskStatus.BLOCKED, blockReason)}
-                  className="px-4 py-1.5 bg-red-600 text-white text-xs font-bold rounded-lg shadow-sm disabled:opacity-50"
+                  className="px-5 py-2 min-h-[44px] bg-red-600 hover:bg-red-700 text-white text-xs font-bold rounded-xl shadow-sm disabled:opacity-50"
                 >
                   Mark Blocked
                 </button>

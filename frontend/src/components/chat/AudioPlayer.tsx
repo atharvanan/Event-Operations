@@ -80,8 +80,8 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({ src, durationSeconds, 
     <div
       className={`flex items-center space-x-2.5 p-2 rounded-xl max-w-xs ${
         isOutgoing
-          ? 'bg-blue-700/60 text-white'
-          : 'bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white'
+          ? 'bg-brand-800/70 text-white'
+          : 'bg-brand-50/70 dark:bg-[#221C3E] text-[#1A162E] dark:text-white'
       }`}
     >
       <audio ref={audioRef} src={fullSrc} preload="metadata" />
@@ -89,10 +89,11 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({ src, durationSeconds, 
       <button
         type="button"
         onClick={togglePlay}
-        className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 shadow-sm transition-all ${
+        aria-label={isPlaying ? 'Pause voice note' : 'Play voice note'}
+        className={`w-9 h-9 min-w-[36px] min-h-[36px] rounded-full flex items-center justify-center shrink-0 shadow-sm transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 ${
           isOutgoing
-            ? 'bg-white text-blue-700 hover:bg-slate-100'
-            : 'bg-blue-600 text-white hover:bg-blue-700'
+            ? 'bg-white text-brand-700 hover:bg-brand-50'
+            : 'bg-brand-600 text-white hover:bg-brand-700'
         }`}
       >
         {isPlaying ? <Pause className="w-4 h-4 fill-current" /> : <Play className="w-4 h-4 fill-current ml-0.5" />}
@@ -100,15 +101,15 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({ src, durationSeconds, 
 
       {/* Progress & Waveform Sim */}
       <div className="flex-1 space-y-1">
-        <div className="h-1.5 w-full bg-slate-300 dark:bg-slate-700 rounded-full overflow-hidden">
+        <div className="h-1.5 w-full bg-brand-200 dark:bg-brand-900 rounded-full overflow-hidden">
           <div
             className={`h-full rounded-full transition-all duration-150 ${
-              isOutgoing ? 'bg-white' : 'bg-blue-600'
+              isOutgoing ? 'bg-white' : 'bg-brand-600'
             }`}
             style={{ width: `${progressPercent}%` }}
           />
         </div>
-        <div className="flex justify-between text-[10px] opacity-75">
+        <div className="flex justify-between text-xs opacity-90">
           <span>{formatTime(currentTime)}</span>
           <span>{formatTime(totalDuration)}</span>
         </div>
@@ -118,10 +119,11 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({ src, durationSeconds, 
       <button
         type="button"
         onClick={cyclePlaybackRate}
-        className={`text-[10px] font-bold px-1.5 py-0.5 rounded border transition-colors ${
+        aria-label={`Playback speed ${playbackRate}x`}
+        className={`text-xs font-bold px-2 py-1 min-h-[32px] rounded border transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 ${
           isOutgoing
-            ? 'border-blue-400/50 hover:bg-blue-600/60'
-            : 'border-slate-300 dark:border-slate-700 hover:bg-slate-200 dark:hover:bg-slate-700'
+            ? 'border-brand-300/50 hover:bg-brand-700/60'
+            : 'border-brand-200 dark:border-brand-700 hover:bg-brand-100 dark:hover:bg-brand-900'
         }`}
       >
         {playbackRate}x

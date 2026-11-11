@@ -33,7 +33,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
     <div className={`flex flex-col mb-3 ${isOutgoing ? 'items-end' : 'items-start'}`}>
       {/* Sender Name for incoming messages */}
       {!isOutgoing && message.senderId && (
-        <span className="text-[11px] font-bold text-slate-500 mb-1 ml-1">
+        <span className="text-xs font-bold text-[#524D6B] dark:text-brand-200 mb-1 ml-1">
           {message.senderId.name}
         </span>
       )}
@@ -41,17 +41,17 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
       <div
         className={`rounded-2xl px-3.5 py-2.5 max-w-[85%] sm:max-w-md shadow-sm space-y-1.5 ${
           isOutgoing
-            ? 'bg-blue-600 text-white rounded-tr-xs'
-            : 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white border border-slate-200 dark:border-slate-700/80 rounded-tl-xs'
+            ? 'bg-brand-600 text-white rounded-tr-xs'
+            : 'bg-white dark:bg-[#18132B] text-[#1A162E] dark:text-white border border-brand-200/70 dark:border-brand-800/60 rounded-tl-xs'
         }`}
       >
         {/* Reply context if any */}
         {message.replyToMessageId && (
           <div
-            className={`p-1.5 rounded-lg text-[11px] border-l-2 mb-1 opacity-90 truncate ${
+            className={`p-1.5 rounded-lg text-xs border-l-2 mb-1 opacity-90 truncate ${
               isOutgoing
-                ? 'bg-blue-700/60 border-white text-white'
-                : 'bg-slate-100 dark:bg-slate-700/60 border-blue-600 text-slate-600 dark:text-slate-300'
+                ? 'bg-brand-700/60 border-white text-white'
+                : 'bg-brand-50/70 dark:bg-[#221C3E] border-brand-600 text-[#4B4566] dark:text-brand-200'
             }`}
           >
             <span className="font-bold block">
@@ -81,60 +81,64 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
 
         {/* 3. Photo Attachment */}
         {message.messageType === MessageType.PHOTO && fullMediaUrl && (
-          <div
+          <button
+            type="button"
+            aria-label="View photo attachment in full size"
             onClick={() => onOpenImage && onOpenImage(fullMediaUrl)}
-            className="rounded-xl overflow-hidden cursor-pointer max-h-60 max-w-xs"
+            className="rounded-xl overflow-hidden cursor-pointer max-h-60 max-w-xs block text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
           >
-            <img src={fullMediaUrl} alt="Photo attachment" className="object-cover w-full h-full rounded-xl" />
-          </div>
+            <img src={fullMediaUrl} alt="Photo attachment sent in chat" className="object-cover w-full h-full rounded-xl" />
+          </button>
         )}
 
         {/* 4. Task Link Reference */}
         {message.taskIdReference && (
-          <div
+          <button
+            type="button"
+            aria-label={`Open linked task: ${message.taskIdReference.title}`}
             onClick={() => onOpenTask && onOpenTask(message.taskIdReference._id)}
-            className={`mt-1 p-2.5 rounded-xl border cursor-pointer transition-colors ${
+            className={`w-full text-left mt-1 p-2.5 rounded-xl border cursor-pointer transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white ${
               isOutgoing
-                ? 'bg-blue-700/50 border-blue-400 text-white hover:bg-blue-700/80'
-                : 'bg-slate-50 dark:bg-slate-900/60 border-slate-200 dark:border-slate-700 hover:border-blue-500'
+                ? 'bg-brand-700/50 border-brand-300 text-white hover:bg-brand-700/80'
+                : 'bg-brand-50/60 dark:bg-[#221C3E] border-brand-200 dark:border-brand-700 hover:border-brand-500'
             }`}
           >
-            <div className="flex items-center justify-between text-[10px] font-bold opacity-80 mb-1">
+            <div className="flex items-center justify-between text-xs font-bold opacity-95 mb-1">
               <span className="flex items-center">
-                <KanbanSquare className="w-3 h-3 mr-1" />
+                <KanbanSquare className="w-3.5 h-3.5 mr-1" aria-hidden="true" />
                 Linked Operational Task
               </span>
-              <ExternalLink className="w-3 h-3" />
+              <ExternalLink className="w-3.5 h-3.5" aria-hidden="true" />
             </div>
 
             <h5 className="font-extrabold text-xs truncate">
               {message.taskIdReference.title}
             </h5>
 
-            <div className="flex items-center space-x-2 mt-1.5 text-[10px] font-bold">
-              <span className="px-1.5 py-0.5 rounded bg-black/20">
+            <div className="flex items-center space-x-2 mt-1.5 text-xs font-bold">
+              <span className="px-1.5 py-0.5 rounded bg-black/25">
                 {message.taskIdReference.priority}
               </span>
-              <span className="px-1.5 py-0.5 rounded bg-black/20">
+              <span className="px-1.5 py-0.5 rounded bg-black/25">
                 {message.taskIdReference.status}
               </span>
             </div>
-          </div>
+          </button>
         )}
 
         {/* Timestamp & Read Receipt Checkmarks */}
         <div
-          className={`flex items-center justify-end space-x-1 text-[10px] pt-0.5 ${
-            isOutgoing ? 'text-blue-100' : 'text-slate-400'
+          className={`flex items-center justify-end space-x-1 text-xs pt-0.5 ${
+            isOutgoing ? 'text-brand-100 font-medium' : 'text-[#524D6B] dark:text-brand-300'
           }`}
         >
           <span>{formatTime(message.createdAt)}</span>
           {isOutgoing && (
             <span>
               {message.readBy && message.readBy.length > 1 ? (
-                <CheckCheck className="w-3.5 h-3.5 text-sky-200" />
+                <CheckCheck className="w-3.5 h-3.5 text-sky-200" aria-label="Read by team" />
               ) : (
-                <Check className="w-3.5 h-3.5" />
+                <Check className="w-3.5 h-3.5" aria-label="Delivered" />
               )}
             </span>
           )}

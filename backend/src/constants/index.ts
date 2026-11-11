@@ -41,6 +41,7 @@ export enum MediaType {
   PHOTO = 'PHOTO',
   VIDEO = 'VIDEO',
   AUDIO = 'AUDIO',
+  DOCUMENT = 'DOCUMENT',
 }
 
 export enum ConversationType {

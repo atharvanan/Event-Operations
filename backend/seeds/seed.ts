@@ -9,6 +9,8 @@ import { Team } from '../src/models/Team.js';
 import { Task } from '../src/models/Task.js';
 import { TaskActivity } from '../src/models/TaskActivity.js';
 import { Conversation } from '../src/models/Conversation.js';
+import { Attendee } from '../src/models/Attendee.js';
+import { EventResource } from '../src/models/EventResource.js';
 import { OrgRole, EventRole, TaskStatus, TaskPriority, ConversationType } from '../src/constants/index.js';
 
 export const seedDatabase = async () => {
@@ -26,6 +28,8 @@ export const seedDatabase = async () => {
     Task.deleteMany({}),
     TaskActivity.deleteMany({}),
     Conversation.deleteMany({}),
+    Attendee.deleteMany({}),
+    EventResource.deleteMany({}),
   ]);
 
   console.log('[Seed] Cleared existing records.');
@@ -52,12 +56,22 @@ export const seedDatabase = async () => {
     role: OrgRole.OWNER,
   });
 
-  // 2. Create Event
+  // 2. Create Events
   const weddingEvent = await Event.create({
     orgId: org._id,
     name: 'The Grand Heritage Palace Wedding & Sangeet',
     type: 'wedding',
     venue: 'Umaid Heritage Palace Grounds, Jaipur',
+    address: 'Palace Road, Circuit House Circle, Jaipur, Rajasthan',
+    locationDetails: 'Main Gate A for Vendors; Royal Courtyard for Guests',
+    eventMode: 'in_person',
+    registrationConfig: {
+      enabled: true,
+      capacity: 800,
+      requireApproval: false,
+      checkInOpen: true,
+      requirements: ['QR Invitation Pass', 'Photo ID at VIP Gate'],
+    },
     managerId: manager._id,
     startDate: new Date('2026-12-15T10:00:00.000Z'),
     endDate: new Date('2026-12-16T04:00:00.000Z'),
@@ -362,7 +376,122 @@ export const seedDatabase = async () => {
     }
   }
 
-  console.log('[Seed] Database seeded with 1 Wedding Event, 5 Teams, 5 Leads, 7 Workers, and realistic tasks!');
+  // Seed Attendees for Wedding Event
+  const weddingAttendees = [
+    { name: 'Rohan Kulkarni', email: 'rohan.k@guest.in', phone: '+919822011001', ticketCode: 'EO-W101', ticketType: 'VIP', status: 'checked_in' },
+    { name: 'Sneha Joshi', email: 'sneha.j@guest.in', phone: '+919822011002', ticketCode: 'EO-W102', ticketType: 'General', status: 'registered' },
+    { name: 'Aarav Deshmukh', email: 'aarav.d@guest.in', phone: '+919822011003', ticketCode: 'EO-W103', ticketType: 'VIP', status: 'registered' },
+    { name: 'Priya Verma', email: 'priya.v@guest.in', phone: '+919822011004', ticketCode: 'EO-W104', ticketType: 'General', status: 'registered' },
+    { name: 'Kabir Malhotra', email: 'kabir.m@guest.in', phone: '+919822011005', ticketCode: 'EO-W105', ticketType: 'Speaker', status: 'checked_in' },
+  ];
+
+  for (const att of weddingAttendees) {
+    await Attendee.create({
+      eventId: weddingEvent._id,
+      name: att.name,
+      email: att.email,
+      phone: att.phone,
+      ticketCode: att.ticketCode,
+      qrPayload: `EVENTOPS:${weddingEvent._id.toString()}:${att.ticketCode}`,
+      ticketType: att.ticketType,
+      status: att.status,
+      ...(att.status === 'checked_in' ? { checkedInAt: new Date(), checkedInBy: manager._id } : {}),
+    });
+  }
+
+  // Upcoming Summit Event (3 days out)
+  const summitStart = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000);
+  const summitEnd = new Date(summitStart.getTime() + 10 * 60 * 60 * 1000);
+  const summitEvent = await Event.create({
+    orgId: org._id,
+    name: 'TechConnect 2026',
+    type: 'corporate',
+    venue: 'Amravati Convention Center',
+    address: 'Exhibition Plaza, Amravati, Maharashtra',
+    locationDetails: 'Hall B Registration Foyer & Main Auditorium',
+    eventMode: 'hybrid',
+    coverImage: '/images/events/corporate.svg',
+    managerId: manager._id,
+    startDate: summitStart,
+    endDate: summitEnd,
+    zones: ['Registration Desk', 'Main Auditorium', 'Expo Booths', 'Speaker Lounge'],
+    status: 'live_setup',
+    description: 'Annual regional summit on event tech, live engineering, and keynote sessions.',
+    registrationConfig: {
+      enabled: true,
+      capacity: 600,
+      requireApproval: false,
+      checkInOpen: true,
+      requirements: ['QR Badge Pass', 'Attendee Email Confirmation'],
+    },
+  });
+
+  await EventMembership.create({
+    eventId: summitEvent._id,
+    userId: manager._id,
+    role: EventRole.EVENT_MANAGER,
+  });
+
+  await Conversation.create({
+    eventId: summitEvent._id,
+    type: ConversationType.GLOBAL_EVENT,
+    title: 'TechConnect 2026 - All Hands Ops',
+    participantIds: [manager._id],
+  });
+
+  const summitRegTeam = await Team.create({
+    eventId: summitEvent._id,
+    name: 'Venue & Guest Registration',
+    description: 'Front desk badge scanning, venue staging, and AV check',
+    colorHex: '#43328E',
+    icon: 'Users',
+    leadId: manager._id,
+    memberIds: [],
+    isActive: true,
+  });
+
+  const summitTaskTitles = [
+    { title: 'Book venue', status: TaskStatus.COMPLETED, offsetDays: -1 },
+    { title: 'Send invitations', status: TaskStatus.COMPLETED, offsetDays: 0 },
+    { title: 'Finalize catering', status: TaskStatus.IN_PROGRESS, offsetDays: 1 },
+    { title: 'Set up registration desk', status: TaskStatus.TO_DO, offsetDays: 2 },
+  ];
+
+  for (const st of summitTaskTitles) {
+    const due = new Date(Date.now() + st.offsetDays * 24 * 60 * 60 * 1000);
+    await Task.create({
+      eventId: summitEvent._id,
+      teamId: summitRegTeam._id,
+      parentTaskId: null,
+      title: st.title,
+      description: `Operational checklist step: ${st.title}`,
+      zone: 'Registration Desk',
+      priority: st.status === TaskStatus.TO_DO ? TaskPriority.HIGH : TaskPriority.MEDIUM,
+      status: st.status,
+      assigneeId: manager._id,
+      creatorId: manager._id,
+      dueTime: due,
+      evidenceRequired: false,
+      minEvidenceCount: 0,
+      evidenceTypes: ['PHOTO'],
+    });
+  }
+
+  for (let i = 1; i <= 4; i++) {
+    const code = `TC-10${i}`;
+    await Attendee.create({
+      eventId: summitEvent._id,
+      name: ['Meera Deshpande', 'Siddharth Kulkarni', 'Nandini Rao', 'Karan Mehta'][i - 1],
+      email: `attendee${i}@techconnect.in`,
+      ticketCode: code,
+      qrPayload: `EVENTOPS:${summitEvent._id.toString()}:${code}`,
+      ticketType: i === 1 ? 'Speaker' : i === 2 ? 'VIP' : 'General',
+      status: i === 4 ? 'checked_in' : 'registered',
+      ...(i === 4 ? { checkedInAt: new Date(), checkedInBy: manager._id } : {}),
+    });
+  }
+
+  console.log('[Seed] Database seeded with 2 Events, 5+ Teams, Attendees with QR Passes, and Operational Checklists!');
   await disconnectDB();
 };
 

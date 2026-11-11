@@ -71,6 +71,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     if (savedLang) {
       i18n.changeLanguage(savedLang);
+      if (typeof document !== 'undefined') {
+        document.documentElement.lang = savedLang;
+      }
     }
 
     setIsLoading(false);
@@ -161,6 +164,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const changeLanguage = async (lang: SupportedLanguage) => {
     await i18n.changeLanguage(lang);
+    if (typeof document !== 'undefined') {
+      document.documentElement.lang = lang;
+    }
     localStorage.setItem('eventops_lang', lang);
     if (user) {
       setUser({ ...user, preferredLanguage: lang });

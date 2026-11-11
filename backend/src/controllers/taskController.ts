@@ -311,7 +311,7 @@ export const getTaskById = async (req: AuthenticatedRequest, res: Response): Pro
 export const updateTaskStatus = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
     const { taskId } = req.params;
-    const { status, reason, revisedDueTime } = req.body;
+    const { status, reason, revisedDueTime, expectedUpdatedAt } = req.body;
 
     if (!status || !Object.values(TaskStatus).includes(status)) {
       res.status(400).json({ success: false, message: 'Valid status is required.' });
@@ -322,6 +322,24 @@ export const updateTaskStatus = async (req: AuthenticatedRequest, res: Response)
     if (!task) {
       res.status(404).json({ success: false, message: 'Task not found.' });
       return;
+    }
+
+    // Optimistic concurrency check for offline queued actions so stale client changes never silently overwrite newer server state
+    if (expectedUpdatedAt) {
+      const clientTs = new Date(expectedUpdatedAt).getTime();
+      const serverTs = new Date(task.updatedAt).getTime();
+      if (!isNaN(clientTs) && serverTs - clientTs > 1500) {
+        res.status(409).json({
+          success: false,
+          code: 'VERSION_CONFLICT',
+          message: `Task "${task.title}" was updated on the server (${task.status}) while you were offline. Review the latest server state before applying your change.`,
+          serverState: {
+            status: task.status,
+            updatedAt: task.updatedAt,
+          },
+        });
+        return;
+      }
     }
 
     const event = await Event.findById(task.eventId);

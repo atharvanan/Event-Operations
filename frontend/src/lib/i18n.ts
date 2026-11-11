@@ -15,7 +15,8 @@ const resources = {
 if (!i18n.isInitialized) {
   i18n.use(initReactI18next).init({
     resources,
-    lng: typeof window !== 'undefined' ? localStorage.getItem('eventops_lang') || 'en' : 'en',
+    // Start identically on server and initial client hydration; AuthContext applies saved locale post-mount
+    lng: 'en',
     fallbackLng: 'en',
     defaultNS: 'common',
     interpolation: {

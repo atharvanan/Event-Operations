@@ -6,9 +6,6 @@ import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../../../../contexts/AuthContext';
 import { api } from '../../../../../lib/api';
 import { useSocket } from '../../../../../hooks/useSocket';
-import { Navbar } from '../../../../../components/layout/Navbar';
-import { Sidebar } from '../../../../../components/layout/Sidebar';
-import { BottomNav } from '../../../../../components/layout/BottomNav';
 import { MessageBubble } from '../../../../../components/chat/MessageBubble';
 import { VoiceRecorder } from '../../../../../components/chat/VoiceRecorder';
 import { TaskDetailModal } from '../../../../../components/tasks/TaskDetailModal';
@@ -206,51 +203,58 @@ export default function ChatPage() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-slate-50 dark:bg-slate-950">
-      <Navbar />
-
-      <div className="flex-1 flex pb-16 md:pb-0 h-[calc(100vh-65px)] overflow-hidden">
-        <Sidebar />
-
-        <main className="flex-1 max-w-7xl w-full mx-auto p-2 sm:p-4 flex gap-4 h-full overflow-hidden">
+    <div className="flex flex-col h-[calc(100dvh-11rem)] md:h-[calc(100dvh-7.5rem)] overflow-hidden">
+      <div className="flex-1 flex gap-4 h-full overflow-hidden">
           {/* Left Pane: Channels List */}
           <div
-            className={`w-full md:w-80 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 flex flex-col overflow-hidden shrink-0 ${
+            className={`w-full md:w-80 bg-white dark:bg-[#18132B] rounded-3xl border border-brand-200/70 dark:border-brand-800 flex flex-col overflow-hidden shrink-0 shadow-card ${
               activeConversation ? 'hidden md:flex' : 'flex'
             }`}
           >
             {/* Search Header */}
-            <div className="p-3.5 border-b border-slate-200 dark:border-slate-800">
-              <h2 className="font-extrabold text-sm text-slate-900 dark:text-white mb-2">
-                Live Channels
-              </h2>
+            <div className="p-3.5 border-b border-brand-100 dark:border-brand-800">
+              <div className="flex items-center justify-between mb-2">
+                <h1 className="font-extrabold text-sm text-slate-900 dark:text-white">
+                  Live Channels
+                </h1>
+                <Link
+                  href={`/events/${eventId}`}
+                  className="text-xs font-semibold text-brand-700 dark:text-brand-300 hover:underline"
+                >
+                  Back to Event
+                </Link>
+              </div>
               <div className="relative">
-                <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-2.5" />
+                <Search className="w-4 h-4 text-slate-500 absolute left-3 top-2.5" aria-hidden="true" />
                 <input
-                  type="text"
+                  type="search"
                   placeholder="Filter channels..."
-                  className="w-full pl-8 pr-3 py-1.5 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white"
+                  aria-label="Filter operational channels"
+                  className="w-full pl-9 pr-3 py-1.5 text-xs rounded-xl border border-brand-200 dark:border-brand-700 bg-canvas dark:bg-[#221A40] text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500 min-h-[40px]"
                 />
               </div>
             </div>
 
             {/* Channels List */}
-            <div className="flex-1 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800/60 p-1">
+            <div role="tablist" aria-label="Available operational channels" className="flex-1 overflow-y-auto divide-y divide-brand-100/70 dark:divide-brand-800/60 p-1">
               {isLoadingConversations ? (
-                <div className="p-4 text-center text-xs text-slate-400">Loading channels...</div>
+                <div className="p-4 text-center text-xs text-slate-500">Loading channels...</div>
               ) : conversations.length === 0 ? (
-                <div className="p-6 text-center text-xs text-slate-400">No channels found.</div>
+                <div className="p-6 text-center text-xs text-slate-500">No channels found.</div>
               ) : (
                 conversations.map((conv) => {
                   const isSelected = activeConversation?._id === conv._id;
                   return (
-                    <div
+                    <button
                       key={conv._id}
+                      type="button"
+                      role="tab"
+                      aria-selected={isSelected}
                       onClick={() => setActiveConversation(conv)}
-                      className={`p-3 rounded-xl transition-all cursor-pointer flex items-center justify-between ${
+                      className={`w-full text-left p-3 rounded-2xl transition-all cursor-pointer flex items-center justify-between min-h-[52px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 ${
                         isSelected
-                          ? 'bg-blue-50 dark:bg-blue-950/60 border border-blue-200 dark:border-blue-900'
-                          : 'hover:bg-slate-50 dark:hover:bg-slate-800/50'
+                          ? 'bg-pastel-purple dark:bg-brand-900/60 border border-brand-200 dark:border-brand-700'
+                          : 'hover:bg-canvas dark:hover:bg-[#221A40]'
                       }`}
                     >
                       <div className="flex items-center space-x-2.5 min-w-0">
@@ -259,7 +263,7 @@ export default function ChatPage() {
                           style={{
                             backgroundColor:
                               conv.type === ConversationType.GLOBAL_EVENT
-                                ? '#2563EB'
+                                ? '#43328E'
                                 : conv.teamId?.colorHex || '#475569',
                           }}
                         >
@@ -271,21 +275,21 @@ export default function ChatPage() {
                         </div>
 
                         <div className="min-w-0">
-                          <h4 className="text-xs font-bold text-slate-900 dark:text-white truncate">
+                          <h2 className="text-xs font-bold text-slate-900 dark:text-white truncate">
                             {conv.title}
-                          </h4>
-                          <p className="text-[11px] text-slate-500 truncate mt-0.5">
+                          </h2>
+                          <p className="text-xs text-slate-600 dark:text-slate-300 truncate mt-0.5">
                             {conv.lastMessage ? conv.lastMessage.content : 'No messages yet'}
                           </p>
                         </div>
                       </div>
 
                       {conv.unreadCount > 0 && (
-                        <span className="w-5 h-5 rounded-full bg-blue-600 text-white text-[10px] font-bold flex items-center justify-center shrink-0">
+                        <span className="min-w-[22px] h-5 px-1.5 rounded-full bg-brand-600 text-white text-xs font-bold flex items-center justify-center shrink-0">
                           {conv.unreadCount}
                         </span>
                       )}
-                    </div>
+                    </button>
                   );
                 })
               )}
@@ -294,7 +298,7 @@ export default function ChatPage() {
 
           {/* Right Pane: Active Chat Window */}
           <div
-            className={`flex-1 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 flex flex-col overflow-hidden ${
+            className={`flex-1 bg-white dark:bg-[#18132B] rounded-3xl border border-brand-200/70 dark:border-brand-800 flex flex-col overflow-hidden shadow-card ${
               activeConversation ? 'flex' : 'hidden md:flex'
             }`}
           >
@@ -307,9 +311,10 @@ export default function ChatPage() {
                     <button
                       type="button"
                       onClick={() => setActiveConversation(null)}
-                      className="md:hidden p-1 text-slate-500 hover:text-slate-900"
+                      aria-label="Back to conversations list"
+                      className="md:hidden p-2 min-w-[36px] min-h-[36px] flex items-center justify-center text-slate-500 hover:text-slate-900 dark:hover:text-white rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
                     >
-                      <ArrowLeft className="w-5 h-5" />
+                      <ArrowLeft className="w-5 h-5" aria-hidden="true" />
                     </button>
 
                     <div
@@ -320,6 +325,7 @@ export default function ChatPage() {
                             ? '#2563EB'
                             : activeConversation.teamId?.colorHex || '#475569',
                       }}
+                      aria-hidden="true"
                     >
                       {activeConversation.title.charAt(0)}
                     </div>
@@ -328,7 +334,7 @@ export default function ChatPage() {
                       <h3 className="font-extrabold text-xs sm:text-sm text-slate-900 dark:text-white truncate max-w-xs">
                         {activeConversation.title}
                       </h3>
-                      <span className="text-[10px] text-slate-400 block">
+                      <span className="text-xs text-slate-500 dark:text-slate-400 block font-medium">
                         {typingUsers.length > 0
                           ? `${typingUsers.join(', ')} typing...`
                           : isConnected
@@ -342,23 +348,29 @@ export default function ChatPage() {
                     <button
                       type="button"
                       onClick={() => setShowTaskPicker(true)}
-                      className="inline-flex items-center space-x-1 px-2.5 py-1 bg-blue-50 dark:bg-blue-950 hover:bg-blue-100 text-blue-700 dark:text-blue-300 rounded-lg text-xs font-bold border border-blue-200 dark:border-blue-800 shadow-xs"
+                      aria-label="Share task card in this channel"
+                      className="inline-flex items-center space-x-1 px-3 py-1.5 min-h-[36px] bg-blue-50 dark:bg-blue-950 hover:bg-blue-100 text-blue-700 dark:text-blue-300 rounded-lg text-xs font-bold border border-blue-200 dark:border-blue-800 shadow-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
                     >
-                      <KanbanSquare className="w-3.5 h-3.5" />
+                      <KanbanSquare className="w-3.5 h-3.5" aria-hidden="true" />
                       <span className="hidden sm:inline">Share Task</span>
                     </button>
                   </div>
                 </div>
 
                 {/* Message Thread */}
-                <div className="flex-1 overflow-y-auto p-4 space-y-1">
+                <div
+                  role="log"
+                  aria-live="polite"
+                  aria-label={`${activeConversation.title} messages`}
+                  className="flex-1 overflow-y-auto p-4 space-y-1"
+                >
                   {isLoadingMessages ? (
                     <div className="flex items-center justify-center h-full text-xs text-slate-400">
-                      <Loader2 className="w-5 h-5 animate-spin mr-2" />
+                      <Loader2 className="w-5 h-5 animate-spin mr-2" aria-hidden="true" />
                       Loading messages...
                     </div>
                   ) : messages.length === 0 ? (
-                    <div className="text-center py-16 text-slate-400 text-xs">
+                    <div className="text-center py-16 text-slate-600 dark:text-slate-300 text-xs">
                       No messages yet in this channel. Send the first message below.
                     </div>
                   ) : (
@@ -405,19 +417,21 @@ export default function ChatPage() {
                     <button
                       type="button"
                       onClick={() => fileInputRef.current?.click()}
-                      className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl"
+                      className="p-2.5 min-w-[40px] min-h-[40px] flex items-center justify-center text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+                      aria-label="Attach Photo"
                       title="Attach Photo"
                     >
-                      <Paperclip className="w-4 h-4" />
+                      <Paperclip className="w-4 h-4" aria-hidden="true" />
                     </button>
 
                     <button
                       type="button"
                       onClick={() => setShowVoiceRecorder(true)}
-                      className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-slate-800 rounded-xl"
+                      className="p-2.5 min-w-[40px] min-h-[40px] flex items-center justify-center text-slate-500 hover:text-blue-600 dark:text-slate-400 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-slate-800 rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+                      aria-label="Record Voice Note"
                       title="Record Voice Note"
                     >
-                      <Mic className="w-4 h-4" />
+                      <Mic className="w-4 h-4" aria-hidden="true" />
                     </button>
 
                     <input
@@ -428,72 +442,73 @@ export default function ChatPage() {
                         emitTyping(activeConversation._id, e.target.value.length > 0);
                       }}
                       placeholder="Type a message or updates for the team..."
-                      className="flex-1 px-3.5 py-2 text-xs sm:text-sm rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      aria-label="Type a message or updates for the team"
+                      className="flex-1 px-3.5 py-2.5 text-xs sm:text-sm rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[40px]"
                     />
 
                     <button
                       type="submit"
                       disabled={!messageText.trim()}
-                      className="p-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl shadow-md disabled:opacity-40"
+                      aria-label="Send message"
+                      className="p-2.5 min-w-[40px] min-h-[40px] flex items-center justify-center bg-blue-600 hover:bg-blue-700 text-white rounded-xl shadow-md disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
                     >
-                      <Send className="w-4 h-4" />
+                      <Send className="w-4 h-4" aria-hidden="true" />
                     </button>
                   </form>
                 )}
               </>
             ) : (
-              <div className="flex-1 flex flex-col items-center justify-center p-8 text-center text-slate-400">
+              <div className="flex-1 flex flex-col items-center justify-center p-8 text-center text-slate-500">
                 <MessageSquare className="w-12 h-12 mb-3 opacity-40" />
-                <h3 className="font-bold text-sm text-slate-700 dark:text-slate-300">
+                <h2 className="font-bold text-sm text-slate-800 dark:text-slate-200">
                   Select a Conversation
-                </h3>
-                <p className="text-xs text-slate-500 mt-1 max-w-sm">
+                </h2>
+                <p className="text-xs text-slate-600 dark:text-slate-300 mt-1 max-w-sm">
                   Choose an operational channel or team conversation from the list to start coordinating in real time.
                 </p>
               </div>
             )}
           </div>
-        </main>
       </div>
-
-      <BottomNav />
 
       {/* Share Task Modal Picker */}
       {showTaskPicker && (
-        <div className="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 max-w-md w-full p-5 space-y-4 shadow-2xl max-h-[80vh] flex flex-col">
-            <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
-              <h4 className="font-bold text-sm text-slate-900 dark:text-white">
+        <div role="dialog" aria-modal="true" aria-label="Share task into chat" className="fixed inset-0 z-50 bg-[#150E31]/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-[#18132B] rounded-3xl border border-brand-200 dark:border-brand-800 max-w-md w-full p-5 space-y-4 shadow-2xl max-h-[80dvh] flex flex-col">
+            <div className="flex items-center justify-between pb-2 border-b border-brand-100 dark:border-brand-800">
+              <h2 className="font-bold text-base text-slate-900 dark:text-white">
                 Share an Operational Task into Chat
-              </h4>
+              </h2>
               <button
                 type="button"
+                aria-label="Close share task dialog"
                 onClick={() => setShowTaskPicker(false)}
-                className="text-slate-400 hover:text-slate-600 p-1"
+                className="text-slate-500 hover:text-slate-800 dark:hover:text-white min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl"
               >
-                <X className="w-4 h-4" />
+                <X className="w-5 h-5" />
               </button>
             </div>
 
             <div className="flex-1 overflow-y-auto space-y-2">
               {availableTasks.map((tItem) => (
-                <div
+                <button
                   key={tItem._id}
+                  type="button"
                   onClick={() => handleShareTask(tItem)}
-                  className="p-3 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-blue-500 hover:bg-blue-50/30 cursor-pointer transition-all"
+                  className="w-full text-left p-3.5 rounded-2xl border border-brand-200 dark:border-brand-800 hover:border-brand-500 hover:bg-pastel-purple/40 transition-all"
                 >
                   <div className="flex items-center justify-between mb-1">
-                    <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-blue-50 text-blue-700">
+                    <span className="text-xs font-bold px-2 py-0.5 rounded bg-pastel-purple text-brand-800">
                       {tItem.priority}
                     </span>
-                    <span className="text-[10px] font-medium text-slate-400">
+                    <span className="text-xs font-medium text-slate-500 dark:text-slate-300">
                       {tItem.zone || 'General'}
                     </span>
                   </div>
-                  <h5 className="font-bold text-xs text-slate-900 dark:text-white">
+                  <h3 className="font-bold text-sm text-slate-900 dark:text-white">
                     {tItem.title}
-                  </h5>
-                </div>
+                  </h3>
+                </button>
               ))}
             </div>
           </div>

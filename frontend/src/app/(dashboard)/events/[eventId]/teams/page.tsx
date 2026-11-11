@@ -4,13 +4,10 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useTranslation } from 'react-i18next';
 import { api } from '../../../../../lib/api';
-import { Navbar } from '../../../../../components/layout/Navbar';
-import { Sidebar } from '../../../../../components/layout/Sidebar';
-import { BottomNav } from '../../../../../components/layout/BottomNav';
 import { TeamCard } from '../../../../../components/teams/TeamCard';
 import { CreateTeamModal } from '../../../../../components/teams/CreateTeamModal';
 import { ITeam } from '@shared/types';
-import { Users, Plus, UserPlus, Crown, ArrowLeft } from 'lucide-react';
+import { Users, Plus } from 'lucide-react';
 import Link from 'next/link';
 
 export default function TeamsPage() {
@@ -42,26 +39,20 @@ export default function TeamsPage() {
   }, [eventId]);
 
   return (
-    <div className="min-h-screen flex flex-col bg-slate-50 dark:bg-slate-950">
-      <Navbar />
-
-      <div className="flex-1 flex pb-16 md:pb-0">
-        <Sidebar />
-
-        <main className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8 space-y-6">
+    <div className="space-y-6">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
-              <div className="flex items-center space-x-2 text-xs font-semibold text-slate-500 mb-1">
-                <Link href={`/events/${eventId}`} className="hover:text-blue-600">
-                  Dashboard
+              <div className="flex items-center space-x-2 text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">
+                <Link href={`/events/${eventId}`} className="hover:text-brand-700 dark:hover:text-brand-300">
+                  Event Workspace
                 </Link>
                 <span>/</span>
                 <span>Teams</span>
               </div>
-              <h1 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">
+              <h1 className="text-2xl font-extrabold text-slate-900 dark:text-white tracking-tight">
                 Operational Teams & Roster
               </h1>
-              <p className="text-xs text-slate-500 mt-1">
+              <p className="text-sm text-slate-600 dark:text-slate-300 mt-1">
                 Appoint team leads, allocate workers, and track execution readiness per department
               </p>
             </div>
@@ -69,7 +60,7 @@ export default function TeamsPage() {
             <button
               type="button"
               onClick={() => setShowCreateModal(true)}
-              className="inline-flex items-center space-x-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow-md shadow-blue-600/25 transition-all self-start sm:self-auto"
+              className="inline-flex items-center space-x-2 px-4 py-2.5 min-h-[44px] bg-brand-600 hover:bg-brand-700 text-white rounded-2xl text-sm font-bold shadow-sm transition-all self-start sm:self-auto"
             >
               <Plus className="w-4 h-4" />
               <span>Add Operational Team</span>
@@ -81,21 +72,21 @@ export default function TeamsPage() {
               {[1, 2, 3].map((i) => (
                 <div
                   key={i}
-                  className="h-56 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 animate-pulse"
+                  className="h-56 bg-white dark:bg-[#18132B] rounded-3xl border border-brand-200/70 dark:border-brand-800 animate-pulse"
                 />
               ))}
             </div>
           ) : teams.length === 0 ? (
-            <div className="text-center py-16 bg-white dark:bg-slate-900 rounded-2xl border border-dashed border-slate-200 dark:border-slate-800 max-w-md mx-auto p-6">
-              <Users className="w-12 h-12 text-slate-400 mx-auto mb-3" />
-              <h3 className="font-bold text-sm text-slate-900 dark:text-white mb-1">No Teams Created</h3>
-              <p className="text-xs text-slate-500 mb-6">
-                Start by setting up operational departments like Catering, Stage Decor, and Sound & Lighting.
+            <div className="text-center py-16 bg-white dark:bg-[#18132B] rounded-3xl border border-dashed border-brand-200 dark:border-brand-800 max-w-md mx-auto p-6">
+              <Users className="w-12 h-12 text-brand-400 mx-auto mb-3" />
+              <h2 className="font-bold text-base text-slate-900 dark:text-white mb-1">No Teams Created</h2>
+              <p className="text-sm text-slate-600 dark:text-slate-300 mb-6">
+                Start by setting up operational teams like Catering, Stage Decor, or Sound & Lighting.
               </p>
               <button
                 type="button"
                 onClick={() => setShowCreateModal(true)}
-                className="px-4 py-2 bg-blue-600 text-white rounded-xl text-xs font-bold shadow-md"
+                className="px-4 py-2.5 min-h-[44px] bg-brand-600 hover:bg-brand-700 text-white rounded-2xl text-sm font-bold shadow-sm"
               >
                 Add First Team
               </button>
@@ -111,10 +102,6 @@ export default function TeamsPage() {
               ))}
             </div>
           )}
-        </main>
-      </div>
-
-      <BottomNav />
 
       {/* Create Team Modal */}
       {showCreateModal && (
