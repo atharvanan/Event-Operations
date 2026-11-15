@@ -1,7 +1,12 @@
 import axios from 'axios';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api/v1';
-export const BACKEND_ORIGIN = API_BASE_URL.replace(/\/api\/v1\/?$/, '');
+const API_BASE_URL =
+  process.env.NEXT_PUBLIC_API_URL ||
+  (typeof window !== 'undefined' ? '/api/v1' : 'http://backend:5000/api/v1');
+export const BACKEND_ORIGIN =
+  typeof window !== 'undefined'
+    ? window.location.origin
+    : API_BASE_URL.replace(/\/api\/v1\/?$/, '');
 
 export function resolveAssetUrl(fileUrl?: string): string {
   if (!fileUrl) return '';
