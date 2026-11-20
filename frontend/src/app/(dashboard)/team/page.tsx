@@ -260,7 +260,7 @@ export default function GlobalTeamPage() {
         isOpen={inviteOpen}
         onClose={() => setInviteOpen(false)}
         events={events}
-        defaultEventId={eventFilter || events[0]?._id}
+        defaultEventId={eventFilter || undefined}
         onInvited={loadTeams}
       />
     </div>

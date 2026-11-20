@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 
 interface ModalProps {
@@ -20,8 +21,11 @@ export const Modal: React.FC<ModalProps> = ({
   children,
   maxWidth = 'md',
 }) => {
+  const [mounted, setMounted] = useState(false);
   const dialogRef = useRef<HTMLDivElement>(null);
   const previouslyFocusedElementRef = useRef<HTMLElement | null>(null);
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
 
   const titleId = `modal-title-${title.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
   const descId = description ? `modal-desc-${title.toLowerCase().replace(/[^a-z0-9]+/g, '-')}` : undefined;
@@ -35,6 +39,10 @@ export const Modal: React.FC<ModalProps> = ({
   }[maxWidth];
 
   useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
     if (!isOpen) return;
 
     // Save previous active element to restore focus on close
@@ -44,21 +52,27 @@ export const Modal: React.FC<ModalProps> = ({
     const originalOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
 
-    // Focus the first focusable element inside the modal
-    const focusableElements = dialogRef.current?.querySelectorAll<HTMLElement>(
-      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
-    );
-    if (focusableElements && focusableElements.length > 0) {
-      setTimeout(() => {
-        focusableElements[0]?.focus();
-      }, 50);
-    }
+    // Focus the first interactive input or button inside the modal
+    const timer = setTimeout(() => {
+      if (!dialogRef.current) return;
+      const firstInput = dialogRef.current.querySelector<HTMLElement>(
+        'input:not([disabled]):not([type="hidden"]), select:not([disabled]), textarea:not([disabled])'
+      );
+      if (firstInput) {
+        firstInput.focus();
+      } else {
+        const firstFocusable = dialogRef.current.querySelector<HTMLElement>(
+          'button:not([disabled]), [href], [tabindex]:not([tabindex="-1"])'
+        );
+        firstFocusable?.focus();
+      }
+    }, 50);
 
     // Keydown handler for Escape & Focus Trapping
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         e.preventDefault();
-        onClose();
+        onCloseRef.current();
         return;
       }
 
@@ -89,23 +103,26 @@ export const Modal: React.FC<ModalProps> = ({
     window.addEventListener('keydown', handleKeyDown);
 
     return () => {
+      clearTimeout(timer);
       document.body.style.overflow = originalOverflow;
       window.removeEventListener('keydown', handleKeyDown);
       if (previouslyFocusedElementRef.current) {
         previouslyFocusedElementRef.current.focus();
       }
     };
-  }, [isOpen, onClose]);
+  }, [isOpen]);
 
-  if (!isOpen) return null;
+  if (!isOpen || !mounted) return null;
 
-  return (
+  const modalContent = (
     <div
       role="presentation"
       onClick={(e) => {
-        if (e.target === e.currentTarget) onClose();
+        if (e.target === e.currentTarget) {
+          onCloseRef.current();
+        }
       }}
-      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-[#150E31]/60 backdrop-blur-sm overflow-y-auto animate-in fade-in duration-150 safe-area-bottom"
+      className="fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-4 bg-[#150E31]/70 backdrop-blur-sm overflow-y-auto animate-in fade-in duration-150 safe-area-bottom"
     >
       <div
         ref={dialogRef}
@@ -113,7 +130,8 @@ export const Modal: React.FC<ModalProps> = ({
         aria-modal="true"
         aria-labelledby={titleId}
         aria-describedby={descId}
-        className={`bg-white dark:bg-[#18132B] w-full ${maxWidthClasses} rounded-3xl border border-brand-200/80 dark:border-brand-800/80 shadow-2xl p-5 sm:p-7 space-y-4 my-auto max-h-[90dvh] overflow-y-auto focus:outline-none`}
+        onClick={(e) => e.stopPropagation()}
+        className={`bg-white dark:bg-[#18132B] w-full ${maxWidthClasses} rounded-3xl border border-brand-200/80 dark:border-brand-800/80 shadow-2xl p-5 sm:p-7 space-y-4 my-auto max-h-[90dvh] overflow-y-auto focus:outline-none relative z-10`}
       >
         <div className="flex items-start justify-between border-b border-brand-100 dark:border-brand-800/80 pb-3.5">
           <div>
@@ -128,7 +146,7 @@ export const Modal: React.FC<ModalProps> = ({
           </div>
           <button
             type="button"
-            onClick={onClose}
+            onClick={() => onCloseRef.current()}
             aria-label={`Close ${title} dialog`}
             className="p-2 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white rounded-xl hover:bg-brand-50 dark:hover:bg-brand-900/50 transition min-w-[44px] min-h-[44px] flex items-center justify-center -mr-1 -mt-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
           >
@@ -140,5 +158,6 @@ export const Modal: React.FC<ModalProps> = ({
       </div>
     </div>
   );
-};
 
+  return typeof document !== 'undefined' ? createPortal(modalContent, document.body) : modalContent;
+};
