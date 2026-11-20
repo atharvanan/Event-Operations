@@ -243,13 +243,13 @@ export default function TasksPage() {
           </div>
 
           {viewMode === 'kanban' && (
-            <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4 items-start overflow-x-auto pb-4">
+            <div className="flex gap-4 items-start overflow-x-auto pb-4 pt-1">
               {kanbanColumns.map((col) => {
                 const columnTasks = filteredTasks.filter((t) => col.statuses.includes(t.status));
                 return (
                   <div
                     key={col.id}
-                    className={`rounded-3xl border p-3.5 flex flex-col min-w-[260px] ${col.color}`}
+                    className={`rounded-3xl border p-3.5 flex flex-col w-[270px] min-w-[260px] shrink-0 xl:flex-1 ${col.color}`}
                   >
                     <div className="flex items-center justify-between mb-3 px-1">
                       <h2 className="text-xs font-extrabold text-slate-800 dark:text-slate-100">

@@ -140,11 +140,6 @@ export const Navbar: React.FC<NavbarProps> = ({
             </Link>
           )}
 
-          <div className="hidden sm:flex items-center space-x-1.5">
-            <LanguageSwitcher compact />
-            <ThemeToggle compact />
-          </div>
-
           <NotificationBell />
 
           {user && (
@@ -184,7 +179,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                       href="/check-in"
                       role="menuitem"
                       onClick={() => setProfileMenuOpen(false)}
-                      className="flex items-center space-x-2.5 px-3 py-2.5 min-h-[44px] rounded-xl text-sm font-medium text-slate-700 dark:text-slate-200 hover:bg-brand-50 dark:hover:bg-brand-900/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
+                      className="flex items-center space-x-2.5 px-3 py-2 min-h-[40px] rounded-xl text-sm font-medium text-slate-700 dark:text-slate-200 hover:bg-brand-50 dark:hover:bg-brand-900/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
                     >
                       <QrCode className="w-4 h-4 text-brand-600 dark:text-brand-300" aria-hidden="true" />
                       <span>{t('nav.check_in')}</span>
@@ -194,17 +189,34 @@ export const Navbar: React.FC<NavbarProps> = ({
                       href="/settings"
                       role="menuitem"
                       onClick={() => setProfileMenuOpen(false)}
-                      className="flex items-center space-x-2.5 px-3 py-2.5 min-h-[44px] rounded-xl text-sm font-medium text-slate-700 dark:text-slate-200 hover:bg-brand-50 dark:hover:bg-brand-900/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
+                      className="flex items-center space-x-2.5 px-3 py-2 min-h-[40px] rounded-xl text-sm font-medium text-slate-700 dark:text-slate-200 hover:bg-brand-50 dark:hover:bg-brand-900/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
                     >
                       <Settings className="w-4 h-4 text-brand-600 dark:text-brand-300" aria-hidden="true" />
                       <span>{t('nav.settings')}</span>
                     </Link>
+                  </div>
 
+                  <div className="p-3 border-t border-b border-brand-100 dark:border-brand-800 space-y-2.5">
+                    <div>
+                      <p className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">
+                        Language
+                      </p>
+                      <LanguageSwitcher compact />
+                    </div>
+                    <div>
+                      <p className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">
+                        Theme
+                      </p>
+                      <ThemeToggle compact />
+                    </div>
+                  </div>
+
+                  <div className="p-1.5 pt-2">
                     <button
                       type="button"
                       role="menuitem"
                       onClick={handleLogout}
-                      className="w-full flex items-center space-x-2.5 px-3 py-2.5 min-h-[44px] rounded-xl text-sm font-semibold text-red-700 dark:text-red-300 hover:bg-red-50 dark:hover:bg-red-950/40 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
+                      className="w-full flex items-center space-x-2.5 px-3 py-2 min-h-[40px] rounded-xl text-sm font-semibold text-red-700 dark:text-red-300 hover:bg-red-50 dark:hover:bg-red-950/40 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
                     >
                       <LogOut className="w-4 h-4" aria-hidden="true" />
                       <span>{t('nav.logout')}</span>
