@@ -11,8 +11,13 @@ export const errorHandler = (
   res: Response,
   next: NextFunction
 ): void => {
-  const statusCode = err.statusCode || 500;
-  const message = err.message || 'Internal Server Error';
+  let statusCode = err.statusCode || 500;
+  let message = err.message || 'Internal Server Error';
+
+  if (err.name === 'CastError') {
+    statusCode = 400;
+    message = `Invalid ID format: ${(err as any).value}`;
+  }
 
   console.error(`[Error] ${req.method} ${req.originalUrl}:`, err);
 

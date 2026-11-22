@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { IEvidence, EvidenceReviewStatus } from '@shared/types';
 import { api } from '../../lib/api';
 import { ProtectedMedia } from './ProtectedMedia';
@@ -28,6 +29,11 @@ export const EvidenceLightbox: React.FC<EvidenceLightboxProps> = ({
   const [rejectNote, setRejectNote] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const handleReview = async (reviewStatus: EvidenceReviewStatus, flagTaskRework = false) => {
     try {
@@ -71,12 +77,12 @@ export const EvidenceLightbox: React.FC<EvidenceLightboxProps> = ({
     };
   }, [onClose, showRejectInput]);
 
-  return (
+  const lightboxNode = (
     <div
       role="dialog"
       aria-modal="true"
       aria-label="Evidence preview lightbox"
-      className="fixed inset-0 z-50 bg-slate-950/90 backdrop-blur-md flex flex-col items-center justify-between p-4 sm:p-6 animate-in fade-in duration-150 safe-area-bottom"
+      className="fixed inset-0 z-[9999] bg-slate-950/90 backdrop-blur-md flex flex-col items-center justify-between p-4 sm:p-6 animate-in fade-in duration-150 safe-area-bottom"
     >
       {/* Top Bar */}
       <div className="w-full max-w-4xl flex items-center justify-between text-white pb-3 border-b border-slate-800">
@@ -217,5 +223,7 @@ export const EvidenceLightbox: React.FC<EvidenceLightboxProps> = ({
       </div>
     </div>
   );
+
+  return typeof document !== 'undefined' && mounted ? createPortal(lightboxNode, document.body) : lightboxNode;
 };
 

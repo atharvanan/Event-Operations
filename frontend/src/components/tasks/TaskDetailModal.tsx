@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../contexts/AuthContext';
 import { api } from '../../lib/api';
@@ -46,6 +47,11 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
   const [showUploader, setShowUploader] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'details' | 'microtasks' | 'history'>('details');
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // Action dialog states
   const [showReworkDialog, setShowReworkDialog] = useState(false);
@@ -106,14 +112,15 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
   }, [taskId]);
 
   if (isLoading || !task) {
-    return (
-      <div className="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-sm flex items-center justify-center p-4">
+    const loadingNode = (
+      <div className="fixed inset-0 z-[9999] bg-slate-950/60 backdrop-blur-sm flex items-center justify-center p-4">
         <div className="bg-white dark:bg-slate-900 rounded-2xl p-8 max-w-sm w-full flex flex-col items-center space-y-3">
           <div className="w-8 h-8 border-4 border-brand-600 border-t-transparent rounded-full animate-spin" />
           <span className="text-xs font-bold text-slate-500">Loading operational task...</span>
         </div>
       </div>
     );
+    return typeof document !== 'undefined' && mounted ? createPortal(loadingNode, document.body) : loadingNode;
   }
 
   const isManager = currentEvent?.managerId === user?._id;
@@ -160,20 +167,21 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
     }
   };
 
-  return (
+  const modalNode = (
     <div
       role="presentation"
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
-      className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 safe-area-bottom"
+      className="fixed inset-0 z-[9999] bg-slate-950/70 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 safe-area-bottom"
     >
       <div
         ref={dialogRef}
         role="dialog"
         aria-modal="true"
         aria-labelledby="task-detail-title"
-        className="bg-white dark:bg-[#18132B] rounded-3xl border border-brand-200/70 dark:border-brand-800/60 max-w-2xl w-full flex flex-col max-h-[90dvh] shadow-2xl animate-in fade-in zoom-in-95 duration-150 focus:outline-none"
+        onClick={(e) => e.stopPropagation()}
+        className="bg-white dark:bg-[#18132B] rounded-3xl border border-brand-200/70 dark:border-brand-800/60 max-w-2xl w-full flex flex-col max-h-[90dvh] shadow-2xl animate-in fade-in zoom-in-95 duration-150 focus:outline-none relative z-10"
       >
         {/* Header */}
         <div className="p-5 sm:p-6 border-b border-brand-100 dark:border-brand-800/60 flex items-start justify-between">
@@ -666,4 +674,6 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
       </div>
     </div>
   );
+
+  return typeof document !== 'undefined' && mounted ? createPortal(modalNode, document.body) : modalNode;
 };
