@@ -249,9 +249,9 @@ export default function TasksPage() {
                 return (
                   <div
                     key={col.id}
-                    className={`rounded-3xl border p-3.5 flex flex-col w-[270px] min-w-[260px] shrink-0 xl:flex-1 ${col.color}`}
+                    className={`rounded-3xl border p-3.5 flex flex-col w-[280px] min-w-[270px] shrink-0 xl:flex-1 h-[calc(100vh-270px)] min-h-[460px] max-h-[780px] ${col.color}`}
                   >
-                    <div className="flex items-center justify-between mb-3 px-1">
+                    <div className="flex items-center justify-between mb-3 px-1 shrink-0">
                       <h2 className="text-xs font-extrabold text-slate-800 dark:text-slate-100">
                         {col.title}
                       </h2>
@@ -260,7 +260,7 @@ export default function TasksPage() {
                       </span>
                     </div>
 
-                    <div className="space-y-3 flex-1 min-h-[260px]">
+                    <div className="space-y-3 flex-1 min-h-0 overflow-y-auto no-scrollbar pr-0.5 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
                       {columnTasks.length === 0 ? (
                         <div className="h-32 border-2 border-dashed border-brand-200 dark:border-brand-800 rounded-2xl flex items-center justify-center text-xs text-slate-500 font-medium">
                           No tasks
