@@ -17,6 +17,7 @@ import {
   QrCode,
   LogOut,
   ChevronDown,
+  Sparkles,
 } from 'lucide-react';
 
 interface NavbarProps {
@@ -30,7 +31,7 @@ export const Navbar: React.FC<NavbarProps> = ({
 }) => {
   const { t } = useTranslation();
   const router = useRouter();
-  const { user, organization, currentEvent, logout } = useAuth();
+  const { user, organization, currentEvent, currentRole, logout, login } = useAuth();
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const profileRef = useRef<HTMLDivElement>(null);
 
@@ -150,12 +151,20 @@ export const Navbar: React.FC<NavbarProps> = ({
                 aria-haspopup="menu"
                 aria-expanded={profileMenuOpen}
                 aria-label={`Account menu for ${user.name}`}
-                className="flex items-center space-x-1.5 p-1 pr-2 min-h-[44px] rounded-full bg-white dark:bg-[#18132B] border border-brand-200/80 dark:border-brand-800 hover:border-brand-400 shadow-card transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
+                className="flex items-center space-x-2 p-1.5 pr-2.5 min-h-[44px] rounded-full bg-white dark:bg-[#18132B] border border-brand-200/80 dark:border-brand-800 hover:border-brand-400 shadow-card transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
               >
-                <span className="w-9 h-9 rounded-full bg-brand-700 text-white font-bold text-sm flex items-center justify-center shrink-0">
+                <span className="w-8 h-8 rounded-full bg-brand-700 text-white font-bold text-xs flex items-center justify-center shrink-0">
                   {userInitial}
                 </span>
-                <ChevronDown className="hidden sm:block w-4 h-4 text-slate-600 dark:text-slate-300" aria-hidden="true" />
+                <div className="hidden sm:flex flex-col text-left leading-tight pr-0.5">
+                  <span className="text-xs font-bold text-slate-900 dark:text-white truncate max-w-[110px]">
+                    {user.name}
+                  </span>
+                  <span className="text-[10px] text-brand-700 dark:text-brand-300 font-semibold truncate max-w-[110px]">
+                    {user.email === 'manager@royalweddings.com' ? 'Event Manager' : (currentRole || 'Staff')}
+                  </span>
+                </div>
+                <ChevronDown className="hidden sm:block w-3.5 h-3.5 text-slate-500 dark:text-slate-400 shrink-0" aria-hidden="true" />
               </button>
 
               {profileMenuOpen && (
@@ -175,6 +184,21 @@ export const Navbar: React.FC<NavbarProps> = ({
                   </div>
 
                   <div className="p-1.5 space-y-1">
+                    {user.email !== 'manager@royalweddings.com' && (
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          setProfileMenuOpen(false);
+                          await login('manager@royalweddings.com', 'Password@123');
+                          window.location.reload();
+                        }}
+                        className="w-full flex items-center space-x-2.5 px-3 py-2 min-h-[40px] rounded-xl text-xs font-bold text-brand-800 dark:text-brand-200 bg-brand-50 hover:bg-brand-100 dark:bg-brand-900/40 dark:hover:bg-brand-900/60 text-left transition"
+                      >
+                        <Sparkles className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
+                        <span>Switch to Manager (Vikram)</span>
+                      </button>
+                    )}
+
                     <Link
                       href="/check-in"
                       role="menuitem"

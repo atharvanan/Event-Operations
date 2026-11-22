@@ -86,13 +86,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       setToken(receivedToken);
       setUser(receivedUser);
-      setOrganization(receivedOrg);
+      setOrganization(receivedOrg || null);
+      setCurrentEventState(null);
+      setCurrentRole(null);
 
       localStorage.setItem('eventops_token', receivedToken);
       localStorage.setItem('eventops_user', JSON.stringify(receivedUser));
       if (receivedOrg) {
         localStorage.setItem('eventops_org', JSON.stringify(receivedOrg));
+      } else {
+        localStorage.removeItem('eventops_org');
       }
+      localStorage.removeItem('eventops_event');
+      localStorage.removeItem('eventops_role');
 
       if (receivedUser.preferredLanguage) {
         i18n.changeLanguage(receivedUser.preferredLanguage);
@@ -115,13 +121,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       setToken(receivedToken);
       setUser(receivedUser);
-      setOrganization(receivedOrg);
+      setOrganization(receivedOrg || null);
+      setCurrentEventState(null);
+      setCurrentRole(null);
 
       localStorage.setItem('eventops_token', receivedToken);
       localStorage.setItem('eventops_user', JSON.stringify(receivedUser));
       if (receivedOrg) {
         localStorage.setItem('eventops_org', JSON.stringify(receivedOrg));
+      } else {
+        localStorage.removeItem('eventops_org');
       }
+      localStorage.removeItem('eventops_event');
+      localStorage.removeItem('eventops_role');
 
       if (data.preferredLanguage) {
         i18n.changeLanguage(data.preferredLanguage);

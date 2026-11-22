@@ -5,7 +5,8 @@ import { useTranslation } from 'react-i18next';
 import { api } from '../../lib/api';
 import { ITask, ITeam, TaskPriority } from '@shared/types';
 import { Modal } from '../common/Modal';
-import { Calendar, Clock, Plus, Check, AlertCircle } from 'lucide-react';
+import { Calendar, Clock, Plus, Check, AlertCircle, Sparkles } from 'lucide-react';
+import { useAuth } from '../../contexts/AuthContext';
 
 interface CreateTaskModalProps {
   eventId: string;
@@ -25,6 +26,7 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
   onCreated,
 }) => {
   const { t } = useTranslation();
+  const { user, login } = useAuth();
 
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -223,10 +225,34 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
         <div
           role="alert"
           aria-live="assertive"
-          className="p-3.5 bg-red-50 dark:bg-red-950/60 text-red-700 dark:text-red-300 text-xs font-semibold rounded-xl border border-red-300 dark:border-red-800 flex items-center space-x-2"
+          className="p-3.5 bg-red-50 dark:bg-red-950/60 text-red-700 dark:text-red-300 text-xs font-semibold rounded-xl border border-red-300 dark:border-red-800 space-y-2"
         >
-          <AlertCircle className="w-4 h-4 shrink-0" aria-hidden="true" />
-          <span>{error}</span>
+          <div className="flex items-center space-x-2">
+            <AlertCircle className="w-4 h-4 shrink-0" aria-hidden="true" />
+            <span>{error}</span>
+          </div>
+          {error.toLowerCase().includes('permissions') && (
+            <div className="pl-6 pt-1 border-t border-red-200 dark:border-red-800/80 space-y-2">
+              <p className="text-[11px] text-slate-700 dark:text-slate-300 font-normal leading-relaxed">
+                You are currently signed in as <strong>{user?.name || 'Staff'}</strong> ({user?.email || 'non-manager'}). Creating operational squads and assigning team outcome tasks requires an <strong>Event Manager</strong> account.
+              </p>
+              <button
+                type="button"
+                onClick={async () => {
+                  try {
+                    await login('manager@royalweddings.com', 'Password@123');
+                    setError('');
+                  } catch (e) {
+                    console.error('Quick switch failed', e);
+                  }
+                }}
+                className="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold shadow-xs transition"
+              >
+                <Sparkles className="w-3.5 h-3.5" />
+                <span>Switch to Manager (Vikram Sethi)</span>
+              </button>
+            </div>
+          )}
         </div>
       )}
 
